@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<BorderPane xmlns:fx="http://javafx.com/fxml">
+  <center>
+    <VBox spacing="10" alignment="CENTER">
+      <Label text="Login OK!"/>
+      <Button text="Run test"/>
+    </VBox>
+  </center>
+</BorderPane>
