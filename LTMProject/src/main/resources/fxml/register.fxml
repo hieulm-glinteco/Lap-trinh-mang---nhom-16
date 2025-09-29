@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.DatePicker?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.mycompany.ltmproject.controller.RegisterController"
+           minWidth="800" prefWidth="800" maxWidth="800"
+           minHeight="560" prefHeight="560" maxHeight="560"
+           style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
+
+    <children>
+        <AnchorPane minWidth="460" prefWidth="460" maxWidth="460"
+                    minHeight="400" prefHeight="400" maxHeight="400"
+                    style="-fx-background-color: rgba(255,255,255,0.98);
+                           -fx-background-radius: 20;
+                           -fx-effect: dropshadow(gaussian, #2193b0, 12, 0.2, 0, 3);">
+
+            <children>
+                <!-- Tiêu đề -->
+                <Label text="ĐĂNG KÝ" layoutX="180" layoutY="18"
+                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
+
+                <!-- Họ và tên -->
+                <TextField fx:id="fullNameField" layoutX="50" layoutY="66" prefWidth="360"
+                           promptText="Họ và tên"
+                           style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
+
+                <!-- Ngày sinh -->
+                <DatePicker fx:id="dobPicker" layoutX="50" layoutY="106" prefWidth="360"
+                            promptText="Ngày sinh"
+                            style="-fx-font-size: 14px;"/>
+
+                <!-- Tên đăng nhập -->
+                <TextField fx:id="usernameField" layoutX="50" layoutY="146" prefWidth="360"
+                           promptText="Tên đăng nhập"
+                           style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
+
+                <!-- Mật khẩu -->
+                <PasswordField fx:id="passwordField" layoutX="50" layoutY="186" prefWidth="360"
+                               promptText="Mật khẩu (tối thiểu 6 ký tự)"
+                               style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
+
+                <!-- Email -->
+                <TextField fx:id="emailField" layoutX="50" layoutY="226" prefWidth="360"
+                           promptText="Email"
+                           style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
+
+                <!-- Số điện thoại -->
+                <TextField fx:id="phoneField" layoutX="50" layoutY="266" prefWidth="360"
+                           promptText="Số điện thoại"
+                           style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
+
+                <!-- Nút hành động -->
+                <Button text="Đăng ký" layoutX="50" layoutY="310" prefWidth="170" prefHeight="36"
+                        style="-fx-background-color: linear-gradient(to right, #2193b0, #6dd5ed);
+                               -fx-background-radius: 10; -fx-font-weight: bold; -fx-text-fill: white;"
+                        onAction="#handleRegister"/>
+
+                <Button text="Quay lại đăng nhập" layoutX="240" layoutY="310" prefWidth="170" prefHeight="36"
+                        style="-fx-background-color: transparent; -fx-border-color: #2193b0;
+                               -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;"
+                        onAction="#goLogin"/>
+
+                <!-- Trạng thái -->
+                <Label fx:id="statusLabel" layoutX="50" layoutY="355" prefWidth="360"
+                       style="-fx-text-fill: red; -fx-font-size: 13px;"/>
+            </children>
+        </AnchorPane>
+    </children>
+</StackPane>

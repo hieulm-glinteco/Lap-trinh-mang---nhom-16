@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\controller\LoginController.java
 D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\util\DB.java
 D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\dao\User.java
@@ -6,3 +7,15 @@ D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\ma
 D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\app\App.java
 D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\dao\UserDAO.java
 D:\PTIT_DOCUMENTS\NETWORK_PROGRAMMING\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\net\ClientSocket.java
+=======
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\app\previewUI.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\controller\LoginController.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\dao\User.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\net\SimpleServer.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\dao\UserDAO.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\controller\RegisterController.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\net\ClientSocket.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\app\App.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\util\DBHealth.java
+F:\Lap-trinh-mang---nhom-16\LTMProject\src\main\java\com\mycompany\ltmproject\util\DB.java
+>>>>>>> 5fd760746232df190308aa07720d15134df3139b

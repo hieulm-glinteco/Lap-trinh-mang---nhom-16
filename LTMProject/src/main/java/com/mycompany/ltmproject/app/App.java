@@ -13,10 +13,9 @@ public class App extends Application {
     public void start(Stage primaryStage) throws Exception {
         // Kết nối tới server trước khi mở giao diện đăng nhập
         ClientSocket.getInstance().connect("127.0.0.1", 8888);
-
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ranking.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         Parent root = loader.load();
-        primaryStage.setTitle("Game Đếm số đồ vật - Đăng nhập");
+        primaryStage.setTitle("Game");
         primaryStage.setScene(new Scene(root));
         primaryStage.setResizable(false);
         primaryStage.show();
