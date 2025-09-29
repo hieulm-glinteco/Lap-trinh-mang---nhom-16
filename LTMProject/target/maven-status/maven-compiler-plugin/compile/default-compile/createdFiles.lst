@@ -1,1 +1,8 @@
 com\mycompany\ltmproject\app\App.class
+com\mycompany\ltmproject\controller\LoginController.class
+com\mycompany\ltmproject\util\DB.class
+com\mycompany\ltmproject\net\ClientSocket.class
+com\mycompany\ltmproject\dao\User.class
+com\mycompany\ltmproject\net\SimpleServer.class
+com\mycompany\ltmproject\dao\UserDAO.class
+com\mycompany\ltmproject\util\DBHealth.class

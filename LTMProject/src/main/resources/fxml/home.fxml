@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            prefWidth="400" prefHeight="300"
+            style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
+
+    <children>
+        <Button text="Log out" layoutX="330" layoutY="10" prefWidth="60"
+                style="-fx-background-color: #fff; -fx-border-color: #2193b0; -fx-background-radius: 8;"/>
+        <Label text="Trang chủ" layoutX="150" layoutY="40"
+               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+        <Button text="Chơi game" layoutX="120" layoutY="90" prefWidth="160"
+                style="-fx-background-color: white; -fx-border-radius: 8; -fx-background-radius: 8;"/>
+        <Button text="Xem bảng xếp hạng" layoutX="120" layoutY="135" prefWidth="160"
+                style="-fx-background-color: white; -fx-border-radius: 8; -fx-background-radius: 8;"/>
+        <Button text="Xem lịch sử đấu" layoutX="120" layoutY="180" prefWidth="160"
+                style="-fx-background-color: white; -fx-border-radius: 8; -fx-background-radius: 8;"/>
+        <Button text="Xem người chơi online" layoutX="120" layoutY="225" prefWidth="160"
+                style="-fx-background-color: white; -fx-border-radius: 8; -fx-background-radius: 8;"/>
+    </children>
+</AnchorPane>
+

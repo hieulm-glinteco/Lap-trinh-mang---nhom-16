@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            prefWidth="420" prefHeight="300"
+            style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
+    <children>
+        <Label text="Người chơi online" layoutX="130" layoutY="20"
+               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+        <TableView layoutX="40" layoutY="60" prefWidth="340" prefHeight="180">
+            <columns>
+                <TableColumn text="Số thứ tự" prefWidth="80"/>
+                <TableColumn text="Username" prefWidth="160"/>
+                <TableColumn text="Mời" prefWidth="100"/>
+            </columns>
+        </TableView>
+
+        <Button text="Trở về" layoutX="170" layoutY="250" prefWidth="80"
+                style="-fx-background-color: white; -fx-border-radius: 8; -fx-background-radius: 8;"/>
+    </children>
+</AnchorPane>
+
