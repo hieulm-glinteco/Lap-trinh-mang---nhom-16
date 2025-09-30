@@ -48,7 +48,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>   <!-- quan trọng -->
                 <configuration>
-                    <mainClass>com.mycompany.ltmproject.app.App</mainClass>
+                    <mainClass>com.mycompany.ltmproject.app.previewUI</mainClass>
                 </configuration>
             </plugin>
         </plugins>
