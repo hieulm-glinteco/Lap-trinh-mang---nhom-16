@@ -4,6 +4,7 @@
 <?import javafx.scene.control.*?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.mycompany.ltmproject.controller.HistoryController"
            minWidth="800" prefWidth="800" maxWidth="800"
            minHeight="520" prefHeight="520" maxHeight="520"
            style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
@@ -25,7 +26,7 @@
                     <columns>
                         <TableColumn fx:id="colDate" text="Thời Gian" prefWidth="100"/>
                         <TableColumn fx:id="colOpponent" text="Đối Thủ" prefWidth="120"/>
-                        <TableColumn fx:id="colStatus" text="Kêt Quả" prefWidth="100"/>
+                        <TableColumn fx:id="colStatus" text="Kết Quả" prefWidth="100"/>
                         <TableColumn fx:id="colScore" text="Điểm" prefWidth="100"/>
                     </columns>
                 </TableView>
@@ -34,7 +35,7 @@
                 <Button fx:id="backButton" text="Trở về" layoutX="200" layoutY="310" prefWidth="120" prefHeight="36"
                         style="-fx-background-color: transparent; -fx-border-color: #2193b0;
                                -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;"
-                        />
+                        onAction="#handleBack"/>
             </children>
         </AnchorPane>
     </children>

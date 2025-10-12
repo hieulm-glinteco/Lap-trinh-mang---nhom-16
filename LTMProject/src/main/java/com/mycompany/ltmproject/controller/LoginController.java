@@ -4,7 +4,10 @@
  */
 package com.mycompany.ltmproject.controller;
 
+import com.mycompany.ltmproject.model.User;
 import com.mycompany.ltmproject.net.ClientSocket;
+import com.mycompany.ltmproject.session.SessionManager;
+import java.sql.Date;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.application.Platform;
@@ -13,6 +16,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.cloudinary.json.JSONObject;
 
 /**
  *
@@ -45,7 +49,7 @@ public class LoginController {
     @FXML
     public void handleLogin(ActionEvent event) {
         if (loggingIn) {
-            return; // chặn bấm liên tục
+            return; // chặn spam nút
         }
         String username = usernameField.getText() == null ? "" : usernameField.getText().trim();
         String password = passwordField.getText() == null ? "" : passwordField.getText().trim();
@@ -56,52 +60,99 @@ public class LoginController {
             return;
         }
 
-        // Khoá UI khi đang đăng nhập
+        // Khóa UI khi đang đăng nhập
         setBusy(true, "Đang đăng nhập...");
 
-        String loginRequest
-                = "{\"action\":\"login\",\"username\":\"" + escapeJson(username)
-                + "\",\"password\":\"" + escapeJson(password) + "\"}";
+        // Gửi JSON login request
+        JSONObject loginRequest = new JSONObject();
+        loginRequest.put("action", "login");
+        loginRequest.put("username", username);
+        loginRequest.put("password", password);
 
         new Thread(() -> {
             try {
-                clientSocket.send(loginRequest);
-
-                // TODO: nếu có thể, nên dùng receive có timeout để tránh treo vô hạn
+                clientSocket.send(loginRequest.toString());
                 String response = clientSocket.receive();
 
                 Platform.runLater(() -> {
-                    if (response != null && response.contains("\"status\":\"success\"")) {
-                        statusLabel.setStyle("-fx-text-fill:green;");
-                        statusLabel.setText("Đăng nhập thành công");
-
-                        try {
-                            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
-                            Parent root = loader.load();
-                            // Giữ kích thước cố định như login
-                            Scene scene = new Scene(root, 800, 520);
-
-                            Stage stage = (Stage) loginButton.getScene().getWindow();
-                            stage.setScene(scene);
-                            stage.setTitle("Trang chủ");
-                            stage.setResizable(false);
-                            stage.show();
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
+                    try {
+                        if (response == null || response.isEmpty()) {
                             statusLabel.setStyle("-fx-text-fill:red;");
-                            statusLabel.setText("Không thể mở màn hình Trang chủ!");
+                            statusLabel.setText("Không nhận được phản hồi từ server!");
+                            return;
                         }
-                    } else {
-                        statusLabel.setStyle("-fx-text-fill:red;");
-                        statusLabel.setText("Sai tên đăng nhập hoặc mật khẩu");
-                    }
-                    setBusy(false, null);
-                });
 
+                        System.out.println("Server response: " + response);
+                        JSONObject json = new JSONObject(response);
+
+                        String status = json.optString("status", "fail");
+                        if (!status.equals("success")) {
+                            statusLabel.setStyle("-fx-text-fill:red;");
+                            statusLabel.setText("Sai tên đăng nhập hoặc mật khẩu!");
+                            return;
+                        }
+
+                        // ✅ Parse thông tin user
+                        JSONObject userJson = json.optJSONObject("user");
+                        if (userJson == null) {
+                            statusLabel.setStyle("-fx-text-fill:red;");
+                            statusLabel.setText("Phản hồi từ server bị thiếu user!");
+                            return;
+                        }
+
+                        User user = new User();
+                        user.setId(userJson.optInt("id", -1));
+                        user.setUsername(userJson.optString("username", ""));
+                        user.setName(userJson.optString("name", ""));
+                        user.setEmail(userJson.optString("email", ""));
+                        user.setPhone(userJson.optString("phone", ""));
+                        user.setTotalRankScore(userJson.optInt("totalRankScore", 0));
+
+                        if (userJson.has("dob") && !userJson.isNull("dob")) {
+                            try {
+                                user.setDob(Date.valueOf(userJson.getString("dob")));
+                            } catch (IllegalArgumentException e) {
+                                System.err.println("DOB format invalid: " + userJson.getString("dob"));
+                            }
+                        }
+
+                        // ✅ Mở Home.fxml và truyền user vào controller
+                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
+                        Parent root = loader.load();
+
+                        HomeController homeController = loader.getController();
+                        if (homeController == null) {
+                            System.err.println("⚠️ Không thể lấy controller từ home.fxml!");
+                            statusLabel.setText("Không thể mở màn hình Trang chủ!");
+                            return;
+                        }
+                        
+                        SessionManager.setCurrentUser(user);
+                        System.out.println("Đăng nhập thành công, user ID = " + user.getId());
+
+                        Scene scene = new Scene(root, 800, 520);
+                        Stage stage = (Stage) loginButton.getScene().getWindow();
+                        stage.setScene(scene);
+                        stage.setTitle("Trang chủ");
+                        stage.setResizable(false);
+                        stage.show();
+
+                        statusLabel.setStyle("-fx-text-fill:green;");
+                        statusLabel.setText("Đăng nhập thành công!");
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        statusLabel.setStyle("-fx-text-fill:red;");
+                        statusLabel.setText("Phản hồi không hợp lệ từ server!");
+                    } finally {
+                        setBusy(false, null);
+                    }
+                });
             } catch (Exception e) {
                 Platform.runLater(() -> {
+                    e.printStackTrace();
                     statusLabel.setStyle("-fx-text-fill:red;");
-                    statusLabel.setText("Lỗi kết nối tới server");
+                    statusLabel.setText("Lỗi kết nối tới server!");
                     setBusy(false, null);
                 });
             }

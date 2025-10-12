@@ -19,7 +19,7 @@ public class previewUI extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         try {
-            var root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
+            var root = FXMLLoader.load(getClass().getResource("/fxml/history.fxml"));
             stage.setScene(new Scene((Parent) root, 800, 520));
             stage.setTitle("Đăng nhập");
             stage.show();

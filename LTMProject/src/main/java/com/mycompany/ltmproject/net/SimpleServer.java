@@ -9,9 +9,11 @@ package com.mycompany.ltmproject.net;
  * @author admin
  */
 import com.mycompany.ltmproject.dao.UserDAO;
+import com.mycompany.ltmproject.model.User;
 import java.net.*;
 import java.io.*;
 import java.sql.Date;
+import org.cloudinary.json.JSONObject;
 
 public class SimpleServer {
 
@@ -38,14 +40,35 @@ public class SimpleServer {
                 if (line.contains("\"action\":\"login\"")) {
                     String username = extractValue(line, "username");
                     String password = extractValue(line, "password");
-                    if (UserDAO.checkLogin(username, password)) {
+
+                    User user = UserDAO.getUserByUsername(username);
+
+                    if (user != null && UserDAO.checkLogin(username, password)) {
                         isLoggedIn = true;
                         currentUser = username;
-                        out.println("{\"status\":\"success\"}");
+
+                        JSONObject response = new JSONObject();
+                        response.put("status", "success");
+
+                        JSONObject userJson = new JSONObject();
+                        userJson.put("id", user.getId());
+                        userJson.put("username", user.getUsername());
+                        userJson.put("name", user.getName());
+                        userJson.put("email", user.getEmail());
+                        userJson.put("phone", user.getPhone());
+                        userJson.put("totalRankScore", user.getTotalRankScore());
+
+                        response.put("user", userJson);
+
+                        out.println(response.toString());
                     } else {
+                        System.out.println("fallllllll");
                         out.println("{\"status\":\"fail\"}");
                     }
-                } else if (isLoggedIn && line.contains("\"action\":\"logout\"")) {
+                } 
+                
+                
+                else if (isLoggedIn && line.contains("\"action\":\"logout\"")) {
                     out.println("{\"status\":\"logged_out\"}");
                     break;
                 } else if (line.contains("\"action\":\"register\"")) {

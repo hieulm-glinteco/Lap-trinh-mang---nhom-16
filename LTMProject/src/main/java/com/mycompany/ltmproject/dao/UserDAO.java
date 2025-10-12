@@ -121,7 +121,7 @@ public class UserDAO {
 
         return users;
     }
-    
+
     public static int countWins(int playerId) {
         String sql = "SELECT COUNT(*) FROM GameSession WHERE winner = ?";
         try (Connection conn = DB.get(); PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -138,4 +138,53 @@ public class UserDAO {
         }
         return 0; // Nếu không tìm thấy trận thắng nào
     }
+
+    public static User getUserById(int id) {
+        String sql = "SELECT * FROM player WHERE id = ?";
+        User user = null;
+
+        try (Connection conn = DB.get(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    user = new User();
+                    user.setId(rs.getInt("id"));
+                    user.setUsername(rs.getString("username"));
+                    user.setPassword(rs.getString("password"));
+                    user.setEmail(rs.getString("email"));
+                    user.setPhone(rs.getString("phone"));
+                    user.setName(rs.getString("name"));
+                    user.setTotalRankScore(rs.getInt("totalRankScore"));
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return user;
+    }
+
+    public static User getUserByUsername(String username) {
+        try (Connection conn = DB.get()) {
+            String sql = "SELECT * FROM player WHERE username = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, username);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                User u = new User();
+                u.setId(rs.getInt("id"));
+                u.setName(rs.getString("name"));
+                u.setUsername(rs.getString("username"));
+                u.setEmail(rs.getString("email"));
+                u.setPhone(rs.getString("phone"));
+                u.setTotalRankScore(rs.getInt("totalRankScore"));
+                return u;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

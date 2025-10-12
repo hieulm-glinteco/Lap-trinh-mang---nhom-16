@@ -19,7 +19,10 @@ public class User {
     private String email, phone;
     private int totalRankScore;
     private Date dob;
-
+    
+    public User(){
+        
+    }
     public User(int id, String name, String username, String password, String email, String phone, int totalRankScore, Date dob) {
         this.id = id; 
         this.name = name;

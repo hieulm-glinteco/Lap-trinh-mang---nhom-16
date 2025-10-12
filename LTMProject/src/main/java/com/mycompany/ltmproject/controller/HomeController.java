@@ -1,9 +1,7 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.ltmproject.controller;
 
+import com.mycompany.ltmproject.model.User;
+import com.mycompany.ltmproject.session.SessionManager;
 import java.io.IOException;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
@@ -12,16 +10,17 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-/**
- *
- * @author admin
- */
 public class HomeController {
+
+    // Không cần currentUser hay currentUserId nữa, vì dùng SessionManager
 
     public void handleLogout(ActionEvent e) {
         try {
-            var root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
-            Scene scene = new Scene((Parent) root, 800, 520);
+            // ✅ Xóa user khỏi session khi logout
+            SessionManager.clearSession();
+
+            Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
+            Scene scene = new Scene(root, 800, 520);
             Stage stage = (Stage) ((Node) e.getSource()).getScene().getWindow();
             stage.setScene(scene);
             stage.setTitle("Đăng nhập");
@@ -36,8 +35,26 @@ public class HomeController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ranking.fxml"));
             Parent root = loader.load();
+
+            // ✅ Không cần truyền user nữa
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(root, 800, 520));
+            stage.setTitle("Bảng xếp hạng");
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void handleViewHistory(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/history.fxml"));
+            Parent root = loader.load();
+
+            // ✅ Không cần gọi setCurrentUser vì HistoryController tự lấy từ SessionManager
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setScene(new Scene(root, 800, 520));
+            stage.setTitle("Lịch sử đấu");
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();
