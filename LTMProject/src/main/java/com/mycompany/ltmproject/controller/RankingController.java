@@ -23,54 +23,6 @@ import javafx.util.Pair;
 
 public class RankingController {
 
-//    @FXML
-//    private TableView<User> rankingTable;
-//
-//    @FXML
-//    private TableColumn<User, String> colUsername;
-//
-//    @FXML
-//    private TableColumn<User, Integer> colScore;
-//
-//    @FXML
-//    private Button backButton;
-//
-//    @FXML
-//    public void initialize() {
-//        colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
-//        colScore.setCellValueFactory(new PropertyValueFactory<>("totalRankScore"));
-//
-////         Thêm cột Top tính động (không có trong model)
-//        TableColumn<User, Number> colTop = new TableColumn<>("Top");
-//        colTop.setPrefWidth(50);
-//        colTop.setCellValueFactory(cellData ->
-//            new ReadOnlyObjectWrapper<>(rankingTable.getItems().indexOf(cellData.getValue()) + 1)
-//        );
-//
-//        rankingTable.getColumns().add(0, colTop);
-//
-//        loadRankingData();
-//    }
-//
-//    private void loadRankingData() {
-//        List<User> users = UserDAO.getAllUsers();
-//        System.out.println("Users loaded: " + users.size());
-//
-//        // Sắp xếp: điểm giảm dần, nếu bằng thì theo tên tăng dần
-//        users.sort(Comparator.comparingInt(User::getTotalRankScore).reversed()
-//                             .thenComparing(User::getName));
-//
-//        ObservableList<User> data = FXCollections.observableArrayList(users);
-//        rankingTable.setItems(data);
-//    }
-//
-//    @FXML
-//    private void handleBack(ActionEvent event) throws IOException {
-//        Parent root = FXMLLoader.load(getClass().getResource("/fxml/home.fxml"));
-//        Stage stage = (Stage)((Node) event.getSource()).getScene().getWindow();
-//        stage.setScene(new Scene(root));
-//        stage.show();
-//    }
     @FXML
     private TableView<Pair<User, Integer>> rankingTable;
 
