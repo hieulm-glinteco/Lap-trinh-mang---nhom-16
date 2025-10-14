@@ -8,11 +8,16 @@ package com.mycompany.ltmproject.net;
  *
  * @author admin
  */
+import com.mycompany.ltmproject.dao.GameSessionDAO;
 import com.mycompany.ltmproject.dao.UserDAO;
+import com.mycompany.ltmproject.model.GameSession;
 import com.mycompany.ltmproject.model.User;
 import java.net.*;
 import java.io.*;
 import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
 
 public class SimpleServer {
@@ -65,10 +70,7 @@ public class SimpleServer {
                         System.out.println("fallllllll");
                         out.println("{\"status\":\"fail\"}");
                     }
-                } 
-                
-                
-                else if (isLoggedIn && line.contains("\"action\":\"logout\"")) {
+                } else if (isLoggedIn && line.contains("\"action\":\"logout\"")) {
                     out.println("{\"status\":\"logged_out\"}");
                     break;
                 } else if (line.contains("\"action\":\"register\"")) {
@@ -92,26 +94,98 @@ public class SimpleServer {
                 } else if (line.contains("\"action\":\"ranking\"")) {
                     var users = UserDAO.getAllUsers();
 
-                    // Sắp xếp: điểm giảm dần, nếu bằng thì theo tên
-                    users.sort(java.util.Comparator.comparingInt(com.mycompany.ltmproject.model.User::getTotalRankScore).reversed()
-                            .thenComparing(com.mycompany.ltmproject.model.User::getName));
 
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("[");
+                    // Tạo JSON array chứa danh sách top
+                    JSONArray jsonArray = new JSONArray();
+
                     for (int i = 0; i < users.size(); i++) {
                         var u = users.get(i);
-                        sb.append("{");
-                        sb.append("\"top\":").append(i + 1).append(",");
-                        sb.append("\"username\":\"").append(u.getUsername()).append("\",");
-                        sb.append("\"score\":").append(u.getTotalRankScore());
-                        sb.append("}");
-                        if (i != users.size() - 1) {
-                            sb.append(",");
-                        }
+                        JSONObject userJson = new JSONObject();
+                        userJson.put("top", i + 1);
+                        userJson.put("username", u.getUsername());
+                        userJson.put("score", u.getTotalRankScore());
+                        userJson.put("wins", UserDAO.countWins(u.getId()));
+                        System.out.println(UserDAO.countWins(u.getId()) + " " + u.getId());
+                        jsonArray.put(userJson);
                     }
-                    sb.append("]");
 
-                    out.println(sb.toString());
+                    // Gói trong 1 đối tượng JSON chính (tùy bạn có muốn hay không)
+                    JSONObject response = new JSONObject();
+                    response.put("status", "success");
+                    response.put("ranking", jsonArray);
+
+                    // Gửi JSON về client   
+                    out.println(response.toString());
+                    out.flush();
+                    System.out.println("[SERVER] Sent ranking to client, total: " + users.size());
+                }
+                //xu ly yeu cau xem lich su
+                else if (line.contains("\"action\":\"history\"")) {
+                    JSONObject request = new JSONObject(line);
+                    int userId = request.getInt("userId");
+
+                    System.out.println("📥 Nhận yêu cầu xem lịch sử từ userId: " + userId);
+
+                    GameSessionDAO gameSessionDAO = new GameSessionDAO();
+                    UserDAO userDAO = new UserDAO();
+
+                    List<GameSession> sessions = gameSessionDAO.getGameSessionById(userId);
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+                    JSONArray historyArray = new JSONArray();
+
+                    for (GameSession gs : sessions) {
+                        JSONObject obj = new JSONObject();
+
+                        String date = (gs.getStart() != null) ? dateFormat.format(gs.getStart()) : "";
+                        String opponent = "Ẩn danh";
+                        String status;
+                        String score = gs.getPlayerscore1() + " - " + gs.getPlayerscore2();
+
+                        // ✅ Xác định đối thủ
+                        try {
+                            if (gs.getPlayerid1() == userId) {
+                                User opp = userDAO.getUserById(gs.getPlayerid2());
+                                if (opp != null && opp.getUsername() != null) {
+                                    opponent = opp.getUsername();
+                                }
+                            } else if (gs.getPlayerid2() == userId) {
+                                User opp = userDAO.getUserById(gs.getPlayerid1());
+                                if (opp != null && opp.getUsername() != null) {
+                                    opponent = opp.getUsername();
+                                }
+                            }
+                        } catch (Exception e) {
+                            opponent = "Không xác định";
+                        }
+
+                        // ✅ Trạng thái trận đấu
+                        if (gs.getWinner() == 0) {
+                            status = "Draw";
+                        } else if (gs.getWinner() == userId) {
+                            status = "Win";
+                        } else {
+                            status = "Lose";
+                        }
+
+                        // ✅ Tạo object JSON
+                        obj.put("date", date);
+                        obj.put("opponent", opponent);
+                        obj.put("status", status);
+                        obj.put("score", score);
+
+                        historyArray.put(obj);
+                    }
+
+                    // ✅ Gói kết quả trả về
+                    JSONObject response = new JSONObject();
+                    response.put("status", "success");
+                    response.put("history", historyArray);
+
+                    out.println(response.toString());
+                    out.flush();
+
+                    System.out.println("📤 Đã gửi lịch sử đấu cho userId " + userId);
                 }
 
             }

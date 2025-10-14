@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            prefWidth="700" prefHeight="500"
+            style="-fx-background-color: linear-gradient(to bottom right, #e0f0ff, #ffffff);">
+
+    <!-- KHUNG TRẮNG CHÍNH -->
+    <AnchorPane layoutX="25" layoutY="20" prefWidth="650" prefHeight="460"
+                style="-fx-background-color: white;
+                       -fx-background-radius: 15;
+                       -fx-border-color: #3399ff;
+                       -fx-border-radius: 15;
+                       -fx-effect: dropshadow(gaussian, #2f80ed, 10, 0.3, 0, 3);">
+
+        <!-- TIÊU ĐỀ Ở GIỮA -->
+        <Label text="ĐẾM SỐ LƯỢNG CON VẬT" layoutX="200" layoutY="20"
+               style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2f80ed;" />
+
+        <!-- THỜI GIAN BÊN TRÁI TRÊN -->
+        <Label text="Thời gian:" layoutX="30" layoutY="60"
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
+        <Label fx:id="lblTimeLeft" text="30s" layoutX="100" layoutY="60"
+               style="-fx-font-size: 16px; -fx-text-fill: red; -fx-font-weight: bold;" />
+
+        <!-- ĐIỂM NGƯỜI CHƠI NGAY DƯỚI BỘ ĐẾM -->
+        <Label text="Điểm bạn:" layoutX="30" layoutY="90"
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
+        <Label fx:id="scorePlayer1" text="0" layoutX="110" layoutY="90"
+               style="-fx-font-size: 14px; -fx-text-fill: green; -fx-font-weight: bold;" />
+
+        <Label text="Điểm đối thủ:" layoutX="30" layoutY="115"
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
+        <Label fx:id="scorePlayer2" text="0" layoutX="135" layoutY="115"
+               style="-fx-font-size: 14px; -fx-text-fill: orange; -fx-font-weight: bold;" />
+
+        <!-- HÌNH ẢNH CON VẬT -->
+        <ImageView fx:id="animalImageView" layoutX="180" layoutY="130"
+                   fitWidth="300" fitHeight="180"
+                   preserveRatio="true"
+                   style="-fx-border-color: #2f80ed; -fx-border-radius: 10;" />
+
+        <!-- NHẬP DỮ LIỆU -->
+        <Label text="Số lượng Voi:" layoutX="180" layoutY="330"
+               style="-fx-font-size: 14px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
+        <TextField fx:id="txtElephant" layoutX="320" layoutY="325" prefWidth="120"
+                   style="-fx-background-radius: 10; -fx-border-radius: 10;" />
+
+        <Label text="Số lượng Hải cẩu:" layoutX="180" layoutY="370"
+               style="-fx-font-size: 14px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
+        <TextField fx:id="txtSeal" layoutX="320" layoutY="365" prefWidth="120"
+                   style="-fx-background-radius: 10; -fx-border-radius: 10;" />
+
+        <Label text="Số lượng Cáo:" layoutX="180" layoutY="410"
+        style="-fx-font-size: 14px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
+        <TextField fx:id="txtFox" layoutX="320" layoutY="405" prefWidth="120"
+                   style="-fx-background-radius: 10; -fx-border-radius: 10;" />
+
+        <!-- NÚT GỬI -->
+        <Button fx:id="btnSubmit" text="Gửi" layoutX="270" layoutY="445" prefWidth="120" prefHeight="36"
+                style="-fx-background-color: linear-gradient(to right, #56ccf2, #2f80ed);
+                       -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 15;" />
+    </AnchorPane>
+</AnchorPane>

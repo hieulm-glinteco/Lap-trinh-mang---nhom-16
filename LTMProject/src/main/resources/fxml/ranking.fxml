@@ -17,19 +17,30 @@
                            -fx-effect: dropshadow(gaussian, #2193b0, 12, 0.2, 0, 3);">
 
             <children>
-                <Label text="BẢNG XẾP HẠNG" layoutX="170" layoutY="20"
+                <!-- Tiêu đề -->
+                <Label text="BẢNG XẾP HẠNG" layoutX="160" layoutY="20"
                        style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
 
-                <TableView fx:id="rankingTable" layoutX="50" layoutY="70" prefWidth="420" prefHeight="220">
+                <!-- Bảng xếp hạng -->
+                <TableView fx:id="rankingTable"
+                           layoutX="40" layoutY="70"
+                           prefWidth="420" prefHeight="220"
+                           style="-fx-background-radius: 10; -fx-border-radius: 10;">
                     <columns>
-                        <TableColumn fx:id="colUsername" text="Username" prefWidth="180"/>
-                        <TableColumn fx:id="colScore" text="Điểm" prefWidth="180"/>
+                        <TableColumn fx:id="colUsername" text="Username" prefWidth="160"/>
+                        <TableColumn fx:id="colScore" text="Điểm" prefWidth="120"/>
+                        <!-- Cột Wins được thêm động trong Controller -->
                     </columns>
                 </TableView>
 
-                <Button text="Trở về" layoutX="190" layoutY="310" prefWidth="120" prefHeight="36"
-                        style="-fx-background-color: transparent; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;"
+                <!-- Nút Trở về -->
+                <Button text="⬅ Trở về" layoutX="190" layoutY="320"
+                        prefWidth="120" prefHeight="36"
+                        style="-fx-background-color: transparent;
+                               -fx-border-color: #2193b0;
+                               -fx-border-radius: 10;
+                               -fx-text-fill: #2193b0;
+                               -fx-font-weight: bold;"
                         onAction="#handleBack"/>
             </children>
         </AnchorPane>

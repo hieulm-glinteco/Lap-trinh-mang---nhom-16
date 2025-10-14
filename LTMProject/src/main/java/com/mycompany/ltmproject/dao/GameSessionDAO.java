@@ -24,7 +24,7 @@ public class GameSessionDAO {
             JOIN Player p1 ON gs.Playerid1 = p1.id
             JOIN Player p2 ON gs.Playerid2 = p2.id
             WHERE gs.Playerid1 = ? OR gs.Playerid2 = ?
-            ORDER BY gs.start DESC
+            ORDER BY gs.start_time DESC
         """;
 
         try (Connection con = DB.get();
@@ -39,10 +39,10 @@ public class GameSessionDAO {
                     gs.setId(rs.getInt("id"));
                     gs.setPlayerid1(rs.getInt("Playerid1"));
                     gs.setPlayerid2(rs.getInt("Playerid2"));
-                    gs.setStart(rs.getDate("start"));
-                    gs.setEnd(rs.getDate("end"));
-                    gs.setPlayerscore1(rs.getInt("player1Score"));
-                    gs.setPlayerscore2(rs.getInt("player2Score2"));
+                    gs.setStart(rs.getDate("start_time"));
+                    gs.setEnd(rs.getDate("end_time"));
+                    gs.setPlayerscore1(rs.getInt("playerscore1"));
+                    gs.setPlayerscore2(rs.getInt("playerscore2"));
                     gs.setWinner(rs.getInt("winner")); // vì winner là INT
 
                     list.add(gs);

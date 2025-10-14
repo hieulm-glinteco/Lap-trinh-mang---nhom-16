@@ -4,6 +4,7 @@ import com.mycompany.ltmproject.dao.GameSessionDAO;
 import com.mycompany.ltmproject.dao.UserDAO;
 import com.mycompany.ltmproject.model.GameSession;
 import com.mycompany.ltmproject.model.User;
+import com.mycompany.ltmproject.net.ClientSocket;
 import com.mycompany.ltmproject.session.SessionManager;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -20,6 +21,8 @@ import javafx.scene.Node;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import org.cloudinary.json.JSONArray;
+import org.cloudinary.json.JSONObject;
 
 public class HistoryController {
 
@@ -43,9 +46,10 @@ public class HistoryController {
 
     private final GameSessionDAO gameSessionDAO = new GameSessionDAO();
     private final UserDAO userDAO = new UserDAO();
+    private ClientSocket clientSocket = ClientSocket.getInstance();
 
     @FXML
-    public void initialize() {
+    public void initialize() throws IOException {
         // Cấu hình các cột
         colDate.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDate()));
         colOpponent.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getOpponent()));
@@ -63,7 +67,7 @@ public class HistoryController {
         loadHistory();
     }
 
-    private void loadHistory() {
+    private void loadHistory() throws IOException {
         User currentUser = SessionManager.getCurrentUser();
         if (currentUser == null) {
             System.out.println("⚠️ Không có user trong session — không thể tải lịch sử!");
@@ -71,55 +75,30 @@ public class HistoryController {
         }
 
         int currentUserId = currentUser.getId();
-        List<GameSession> sessions = gameSessionDAO.getGameSessionById(currentUserId);
+        // Gửi yêu cầu đến server
+        JSONObject historyRequest = new JSONObject();
+        historyRequest.put("action", "history");
+        historyRequest.put("userId", currentUserId);
+        clientSocket.send(historyRequest.toString());
+        String response = clientSocket.receive();
+
+        JSONObject res = new JSONObject(response);
         ObservableList<HistoryRecord> historyList = FXCollections.observableArrayList();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-
-        for (GameSession gs : sessions) {
-            String date = (gs.getStart() != null) ? dateFormat.format(gs.getStart()) : "";
-            String opponent = "Ẩn danh";
-            String status;
-            String score = gs.getPlayerscore1() + " - " + gs.getPlayerscore2();
-            
-            System.out.println(gs.getPlayerid1() + " " + gs.getPlayerid2());
-            try {
-                // ✅ Xác định đối thủ dựa theo ID
-                if (gs.getPlayerid1() == currentUserId) {
-                    if (gs.getPlayerid2() != 0) {
-                        User opponentUser = userDAO.getUserById(gs.getPlayerid2());
-//                        System.out.println(opponentUser.getName());
-                        if (opponentUser != null && opponentUser.getUsername() != null) {
-                            opponent = opponentUser.getUsername();
-                        }
-                    }
-                } else if (gs.getPlayerid2() == currentUserId) {
-                    if (gs.getPlayerid1() != 0) {
-                        System.out.println();
-                        User opponentUser = userDAO.getUserById(gs.getPlayerid1());
-//                        System.out.println(opponentUser.getName());
-                        if (opponentUser != null && opponentUser.getUsername() != null) {
-                            opponent = opponentUser.getUsername();
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                opponent = "Không xác định";
-                e.printStackTrace();
+        if (res.getString("status").equals("success")) {
+            JSONArray arr = res.getJSONArray("history");
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                historyList.add(new HistoryRecord(
+                        obj.getString("date"),
+                        obj.getString("opponent"),
+                        obj.getString("status"),
+                        obj.getString("score")
+                ));
             }
-
-            // ✅ Xác định kết quả
-            if (gs.getWinner() == 0) {
-                status = "Hòa";
-            } else if (gs.getWinner() == currentUserId) {
-                status = "Thắng";
-            } else {
-                status = "Thua";
-            }
-
-            historyList.add(new HistoryRecord(date, opponent, status, score));
         }
 
         historyTable.setItems(historyList);
+
     }
 
     // ✅ Giữ lại session khi quay lại Home
