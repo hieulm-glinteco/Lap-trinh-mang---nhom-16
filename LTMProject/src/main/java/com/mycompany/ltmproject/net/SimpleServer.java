@@ -16,11 +16,20 @@ import java.net.*;
 import java.io.*;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
 
 public class SimpleServer {
+    
+    private static final Map<String, Socket> onlineUsers = new ConcurrentHashMap<>();
+    // ✅ key = người được mời, value = người mời
+    private static final Map<String, String> pendingInvites = new ConcurrentHashMap<>();
+    private static final Map<String, List<String>> gameRooms = new ConcurrentHashMap<>();
+    private static int roomCounter = 1;
 
     public static void main(String[] args) throws IOException {
         ServerSocket ss = new ServerSocket(8888);
@@ -33,10 +42,11 @@ public class SimpleServer {
     }
 
     private static void handleClient(Socket s) {
+        String currentUser = null;
         try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream())); PrintWriter out = new PrintWriter(s.getOutputStream(), true)) {
+                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));  PrintWriter out = new PrintWriter(s.getOutputStream(), true)) {
             boolean isLoggedIn = false;
-            String currentUser = null;
+            
             String line;
             while ((line = in.readLine()) != null) {
                 System.out.println("Received: " + line);
@@ -51,6 +61,7 @@ public class SimpleServer {
                     if (user != null && UserDAO.checkLogin(username, password)) {
                         isLoggedIn = true;
                         currentUser = username;
+                        onlineUsers.put(username, s);
 
                         JSONObject response = new JSONObject();
                         response.put("status", "success");
@@ -66,6 +77,7 @@ public class SimpleServer {
                         response.put("user", userJson);
 
                         out.println(response.toString());
+                        broadcastOnlineUsers();
                     } else {
                         System.out.println("fallllllll");
                         out.println("{\"status\":\"fail\"}");
@@ -94,7 +106,6 @@ public class SimpleServer {
                 } else if (line.contains("\"action\":\"ranking\"")) {
                     var users = UserDAO.getAllUsers();
 
-
                     // Tạo JSON array chứa danh sách top
                     JSONArray jsonArray = new JSONArray();
 
@@ -118,8 +129,7 @@ public class SimpleServer {
                     out.println(response.toString());
                     out.flush();
                     System.out.println("[SERVER] Sent ranking to client, total: " + users.size());
-                }
-                //xu ly yeu cau xem lich su
+                } //xu ly yeu cau xem lich su
                 else if (line.contains("\"action\":\"history\"")) {
                     JSONObject request = new JSONObject(line);
                     int userId = request.getInt("userId");
@@ -186,19 +196,118 @@ public class SimpleServer {
                     out.flush();
 
                     System.out.println("📤 Đã gửi lịch sử đấu cho userId " + userId);
+                } else if (line.contains("\"action\":\"getOnline\"")) {
+                    out.println(buildOnlineListJSON());
+                } // ✅ INVITE — người A mời người B
+                else if (line.contains("\"action\":\"invite\"")) {
+                    String target = extractValue(line, "target");
+                    if (target.equals(currentUser)) {
+                        continue; // không mời chính mình
+                    }
+                    Socket targetSocket = onlineUsers.get(target);
+                    if (targetSocket != null) {
+                        pendingInvites.put(target, currentUser);
+
+                        JSONObject json = new JSONObject();
+                        json.put("action", "invite");
+                        json.put("from", currentUser);
+
+                        new PrintWriter(targetSocket.getOutputStream(), true).println(json.toString());
+                        System.out.println("📨 " + currentUser + " invited " + target);
+                    }
+                } // ✅ INVITE RESPONSE — người B phản hồi lời mời từ A
+                else if (line.contains("\"action\":\"invite_response\"")) {
+                    boolean accepted = line.contains("\"accepted\":true");
+                    String inviter = extractValue(line, "target"); // target = người đã gửi lời mời (A)
+                    String invited = currentUser; // người phản hồi (B)
+
+                    pendingInvites.remove(invited);
+
+                    if (accepted) {
+                        String roomId = "room" + (roomCounter++);
+                        gameRooms.put(roomId, Arrays.asList(inviter, invited));
+
+                        sendStartGame(inviter, roomId);
+                        sendStartGame(invited, roomId);
+                    } else {
+                        // Gửi thông báo từ chối cho người mời
+                        Socket inviterSocket = onlineUsers.get(inviter);
+                        if (inviterSocket != null) {
+                            JSONObject reject = new JSONObject();
+                            reject.put("action", "invite_reject");
+                            reject.put("from", invited);
+                            new PrintWriter(inviterSocket.getOutputStream(), true).println(reject.toString());
+                        }
+                    }
                 }
 
             }
         } catch (Exception e) {
             System.out.println("Client disconnected unexpectedly: " + e.getMessage());
         } finally {
-            try {
+             try {
+                if (currentUser != null) {
+                    onlineUsers.remove(currentUser);
+                    pendingInvites.remove(currentUser);
+                    broadcastOnlineUsers();
+                }
                 s.close();
-            } catch (Exception ex) {
+            } catch (Exception ignored) {
             }
-            System.out.println("Client disconnected!");
+            System.out.println("🔴 Client disconnected!");
         }
     }
+
+    private static void sendStartGame(String user, String roomId) {
+        try {
+            Socket socket = onlineUsers.get(user);
+            if (socket == null) {
+                System.out.println("⚠️ Không tìm thấy socket cho user: " + user);
+                return;
+            }
+
+            List<String> players = gameRooms.get(roomId);
+            if (players == null) {
+                System.out.println("⚠️ Không tìm thấy danh sách người chơi cho roomId: " + roomId);
+                return;
+            }
+
+            System.out.println("🚀 Gửi start_game tới " + user + " với danh sách: " + players);
+
+            JSONObject json = new JSONObject();
+            json.put("action", "start_game");
+            json.put("roomId", roomId);
+            json.put("players", new JSONArray(players));  // players bây giờ đã được kiểm tra null
+            new PrintWriter(socket.getOutputStream(), true).println(json.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //Broadcast danh sách người online cho toàn bộ client
+    private static void broadcastOnlineUsers() {
+        String json = buildOnlineListJSON();
+        for (Socket client : onlineUsers.values()) {
+            try {
+                new PrintWriter(client.getOutputStream(), true).println(json);
+            } catch (IOException e) {
+                System.out.println("Không gửi được danh sách cho 1 client: " + e.getMessage());
+            }
+        }
+    }
+
+    private static String buildOnlineListJSON() {
+        JSONArray arr = new JSONArray();
+        for (String user : onlineUsers.keySet()) {
+            arr.put(user);
+        }
+        JSONObject json = new JSONObject();
+        json.put("action", "updateOnline");
+        json.put("online", arr);
+        json.put("count", onlineUsers.size());
+        return json.toString();
+    }
+    
 
     private static String extractValue(String line, String key) {
         String pattern = "\"" + key + "\":\"";
