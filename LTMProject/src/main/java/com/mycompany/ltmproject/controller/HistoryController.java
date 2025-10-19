@@ -6,6 +6,7 @@ import com.mycompany.ltmproject.model.GameSession;
 import com.mycompany.ltmproject.model.User;
 import com.mycompany.ltmproject.net.ClientSocket;
 import com.mycompany.ltmproject.session.SessionManager;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -21,6 +22,8 @@ import javafx.scene.Node;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
 
@@ -49,43 +52,88 @@ public class HistoryController {
     private ClientSocket clientSocket = ClientSocket.getInstance();
 
     @FXML
-    public void initialize() throws IOException {
-        // Cấu hình các cột
+    public void initialize() {
         colDate.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDate()));
         colOpponent.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getOpponent()));
         colStatus.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStatus()));
         colScore.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getScore()));
 
-        // Lấy user hiện tại từ Session
         User currentUser = SessionManager.getCurrentUser();
         if (currentUser == null) {
-            System.out.println("⚠️ Không có người dùng trong session — cần đăng nhập lại!");
+            System.out.println("Không có người dùng trong session — cần đăng nhập lại!");
             return;
         }
 
-        // Tải lịch sử dựa trên userId
-        loadHistory();
+        loadHistoryInBackground();
     }
 
-    private void loadHistory() throws IOException {
+    private void loadHistoryInBackground() {
+        new Thread(() -> {
+            try {
+                loadHistory();
+            } catch (IOException e) {
+                System.err.println("Error loading history: " + e.getMessage());
+                e.printStackTrace();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(HistoryController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }, "history-loader").start();
+    }
+
+    private void loadHistory() throws IOException, InterruptedException {
         User currentUser = SessionManager.getCurrentUser();
         if (currentUser == null) {
-            System.out.println("⚠️ Không có user trong session — không thể tải lịch sử!");
+            System.out.println("Không có user trong session — không thể tải lịch sử!");
             return;
         }
 
         int currentUserId = currentUser.getId();
-        // Gửi yêu cầu đến server
-        JSONObject historyRequest = new JSONObject();
-        historyRequest.put("action", "history");
-        historyRequest.put("userId", currentUserId);
-        clientSocket.send(historyRequest.toString());
-        String response = clientSocket.receive();
 
-        JSONObject res = new JSONObject(response);
-        ObservableList<HistoryRecord> historyList = FXCollections.observableArrayList();
-        if (res.getString("status").equals("success")) {
+        // ⭐ Ngừng listener tạm thời
+        boolean wasListening = clientSocket.isListenerConnected();
+        if (wasListening) {
+            clientSocket.disconnectListener();
+            Thread.sleep(100);
+        }
+
+        try {
+            clientSocket.waitForReady();
+
+            JSONObject historyRequest = new JSONObject();
+            historyRequest.put("action", "history");
+            historyRequest.put("userId", currentUserId);
+            clientSocket.send(historyRequest.toString());
+
+            String response = clientSocket.receive();
+            System.out.println("📩 History Response: " + response);
+
+            if (response == null || response.isEmpty()) {
+                System.err.println("Empty response from server");
+                return;
+            }
+
+            JSONObject res = new JSONObject(response);
+
+            if (!res.has("status")) {
+                System.err.println("Response không có field 'status': " + response);
+                return;
+            }
+
+            String status = res.optString("status", "fail");
+
+            if (!status.equals("success")) {
+                System.err.println("Status không phải success: " + status);
+                return;
+            }
+
+            if (!res.has("history")) {
+                System.err.println("Response không có field 'history'");
+                return;
+            }
+
             JSONArray arr = res.getJSONArray("history");
+            ObservableList<HistoryRecord> historyList = FXCollections.observableArrayList();
+
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
                 historyList.add(new HistoryRecord(
@@ -95,20 +143,35 @@ public class HistoryController {
                         obj.getString("score")
                 ));
             }
+
+            Platform.runLater(() -> {
+                historyTable.setItems(historyList);
+            });
+
+            System.out.println("Loaded " + historyList.size() + " history records");
+
+        } catch (org.cloudinary.json.JSONException e) {
+            System.err.println("JSON Parse Error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // ⭐ Khôi phục listener
+            if (wasListening) {
+                try {
+                    clientSocket.connectListener("localhost", 8888);
+                    Thread.sleep(100);
+                } catch (IOException e) {
+                    System.err.println("Failed to reconnect listener: " + e.getMessage());
+                }
+            }
         }
-
-        historyTable.setItems(historyList);
-
     }
 
-    // ✅ Giữ lại session khi quay lại Home
     @FXML
     void handleBack(ActionEvent event) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
             Parent root = loader.load();
 
-            // Không cần setCurrentUser nữa vì đã có SessionManager
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.setScene(new Scene(root, 800, 520));
             stage.setTitle("Trang chủ");
@@ -118,7 +181,6 @@ public class HistoryController {
         }
     }
 
-    // ==================== CLASS NỘI BỘ CHO TABLEVIEW ====================
     public static class HistoryRecord {
 
         private final String date;

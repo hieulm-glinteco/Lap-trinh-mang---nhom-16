@@ -37,7 +37,8 @@
 
                 <Button text="Xem người chơi online" layoutX="150" layoutY="230" prefWidth="160" prefHeight="36"
                         style="-fx-background-color: white; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #2193b0;"/>
+                               -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #2193b0;"
+                onAction="#handleViewOnlinePlayers"/>
 
                 <!-- Nút logout -->
                 <Button text="Đăng xuất" layoutX="150" layoutY="290" prefWidth="160" prefHeight="36"

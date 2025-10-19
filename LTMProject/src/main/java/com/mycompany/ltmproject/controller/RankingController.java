@@ -43,7 +43,7 @@ public class RankingController {
     private ClientSocket clientSocket = ClientSocket.getInstance();
 
     @FXML
-    public void initialize() {
+    public void initialize() throws IOException, InterruptedException {
         setupTable();
         loadRankingData();
     }
@@ -75,74 +75,101 @@ public class RankingController {
         rankingTable.getColumns().add(0, colTop);
     }
 
-    private void loadRankingData() {
+    private void loadRankingData() throws IOException, InterruptedException {
         setStatus("Đang tải bảng xếp hạng...", "#333");
 
         new Thread(() -> {
             try {
-                // Gửi yêu cầu đến server
-                JSONObject request = new JSONObject();
-                request.put("action", "ranking");
-                clientSocket.send(request.toString());
-
-                // Nhận phản hồi từ server
-                String responseStr = clientSocket.receive();
-                System.out.println("📩 Server response: " + responseStr);
-                if (responseStr == null || responseStr.isEmpty()) {
-                    Platform.runLater(()
-                            -> setStatus("Không nhận được phản hồi từ server!", "red"));
-                    return;
+                // ⭐ Ngừng listener tạm thời
+                boolean wasListening = clientSocket.isListenerConnected();
+                if (wasListening) {
+                    clientSocket.disconnectListener();
+                    Thread.sleep(100);
                 }
 
-                JSONObject response = new JSONObject(responseStr);
-                String status = response.optString("status", "fail");
+                try {
+                    clientSocket.waitForReady();
 
-                if (!status.equals("success")) {
-                    Platform.runLater(()
-                            -> setStatus("Không thể tải bảng xếp hạng!", "red"));
-                    return;
+                    JSONObject request = new JSONObject();
+                    request.put("action", "ranking");
+                    clientSocket.send(request.toString());
+
+                    String responseStr = clientSocket.receive();
+                    System.out.println("📩 Server response: " + responseStr);
+
+                    if (responseStr == null || responseStr.isEmpty()) {
+                        Platform.runLater(() -> setStatus("Không nhận được phản hồi từ server!", "red"));
+                        return;
+                    }
+
+                    JSONObject response = new JSONObject(responseStr);
+
+                    if (!response.has("status")) {
+                        System.err.println("Response không có field 'status': " + responseStr);
+                        Platform.runLater(() -> setStatus("Phản hồi bị lỗi từ server!", "red"));
+                        return;
+                    }
+
+                    String status = response.optString("status", "fail");
+                    if (!status.equals("success")) {
+                        Platform.runLater(() -> setStatus("Không thể tải bảng xếp hạng!", "red"));
+                        return;
+                    }
+
+                    JSONArray rankingArray = response.optJSONArray("ranking");
+                    if (rankingArray == null) {
+                        Platform.runLater(() -> setStatus("Phản hồi bị thiếu dữ liệu!", "red"));
+                        return;
+                    }
+
+                    List<Pair<User, Integer>> rankingList = new ArrayList<>();
+
+                    for (int i = 0; i < rankingArray.length(); i++) {
+                        JSONObject obj = rankingArray.getJSONObject(i);
+                        System.out.println("🔹 Obj[" + i + "] = " + obj.toString(2));
+                        User user = new User();
+                        user.setUsername(obj.optString("username", ""));
+                        user.setTotalRankScore(obj.optInt("score", 0));
+                        int wins = obj.optInt("wins", 0);
+                        rankingList.add(new Pair<>(user, wins));
+                    }
+
+                    rankingList.sort(
+                            Comparator.comparingInt((Pair<User, Integer> pair) -> pair.getKey().getTotalRankScore())
+                                    .reversed()
+                                    .thenComparing(Comparator.comparingInt((Pair<User, Integer> pair) -> pair.getValue()).reversed())
+                                    .thenComparing(pair -> pair.getKey().getUsername())
+                    );
+
+                    ObservableList<Pair<User, Integer>> data = FXCollections.observableArrayList(rankingList);
+
+                    Platform.runLater(() -> {
+                        rankingTable.setItems(data);
+                        setStatus("Tải bảng xếp hạng thành công!", "green");
+                    });
+
+                    System.out.println("Loaded " + rankingList.size() + " ranking records");
+
+                } catch (org.cloudinary.json.JSONException e) {
+                    System.err.println("JSON Parse Error: " + e.getMessage());
+                    Platform.runLater(() -> setStatus("Lỗi xử lý dữ liệu từ server!", "red"));
+                    e.printStackTrace();
+                } finally {
+                    // ⭐ Khôi phục listener
+                    if (wasListening) {
+                        try {
+                            clientSocket.connectListener("localhost", 8888);
+                            Thread.sleep(100);
+                        } catch (IOException e) {
+                            System.err.println("Failed to reconnect listener: " + e.getMessage());
+                        }
+                    }
                 }
-
-                JSONArray rankingArray = response.optJSONArray("ranking");
-                if (rankingArray == null) {
-                    Platform.runLater(()
-                            -> setStatus("Phản hồi bị thiếu dữ liệu!", "red"));
-                    return;
-                }
-
-                List<Pair<User, Integer>> rankingList = new ArrayList<>();
-
-                for (int i = 0; i < rankingArray.length(); i++) {
-                    JSONObject obj = rankingArray.getJSONObject(i);
-                    System.out.println("🔹 Obj[" + i + "] = " + obj.toString(2));
-                    User user = new User();
-                    user.setUsername(obj.optString("username", ""));
-                    user.setTotalRankScore(obj.optInt("score", 0));
-
-                    int wins = obj.optInt("wins", 0);
-                    rankingList.add(new Pair<>(user, wins));
-                }
-
-                // Sắp xếp: số trận thắng ↓, điểm ↓, username ↑
-                rankingList.sort(
-                        Comparator.comparingInt((Pair<User, Integer> pair) -> pair.getKey().getTotalRankScore())
-                                .reversed() // Điểm giảm dần
-                                .thenComparing(Comparator.comparingInt((Pair<User, Integer> pair) -> pair.getValue()).reversed()) // Wins giảm dần
-                                .thenComparing(pair -> pair.getKey().getUsername()) // Tên tăng dần
-                );
-
-                ObservableList<Pair<User, Integer>> data
-                        = FXCollections.observableArrayList(rankingList);
-
-                Platform.runLater(() -> {
-                    rankingTable.setItems(data);
-                    setStatus("✅ Tải bảng xếp hạng thành công!", "green");
-                });
 
             } catch (Exception e) {
+                System.err.println("Error in ranking thread: " + e.getMessage());
+                Platform.runLater(() -> setStatus("Lỗi khi tải bảng xếp hạng từ server!", "red"));
                 e.printStackTrace();
-                Platform.runLater(()
-                        -> setStatus("Lỗi khi tải bảng xếp hạng từ server!", "red"));
             }
         }, "ranking-thread").start();
     }

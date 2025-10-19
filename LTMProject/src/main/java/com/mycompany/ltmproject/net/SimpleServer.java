@@ -16,11 +16,17 @@ import java.net.*;
 import java.io.*;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
 
 public class SimpleServer {
+
+    private static Map<Integer, PrintWriter> onlinePlayers = Collections.synchronizedMap(new HashMap<>());
+    private static Map<Integer, String> onlineUsernames = Collections.synchronizedMap(new HashMap<>());
 
     public static void main(String[] args) throws IOException {
         ServerSocket ss = new ServerSocket(8888);
@@ -33,9 +39,13 @@ public class SimpleServer {
     }
 
     private static void handleClient(Socket s) {
+        Map<Integer, PrintWriter> clientOutputStreams = new HashMap<>();
+            int clientUserId = -1;
+            String clientUsername = "";
         try (
                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream())); PrintWriter out = new PrintWriter(s.getOutputStream(), true)) {
             boolean isLoggedIn = false;
+            
             String currentUser = null;
             String line;
             while ((line = in.readLine()) != null) {
@@ -51,6 +61,14 @@ public class SimpleServer {
                     if (user != null && UserDAO.checkLogin(username, password)) {
                         isLoggedIn = true;
                         currentUser = username;
+                        clientUserId = user.getId();
+                        clientUsername = user.getUsername();
+
+                        System.out.println("🟢 User " + username + " (ID: " + clientUserId + ") is now ONLINE");
+
+                        // QUAN TRỌNG: Thêm vào map TRƯỚC khi broadcast
+                        onlinePlayers.put(clientUserId, out);
+                        onlineUsernames.put(clientUserId, clientUsername);
 
                         JSONObject response = new JSONObject();
                         response.put("status", "success");
@@ -66,11 +84,28 @@ public class SimpleServer {
                         response.put("user", userJson);
 
                         out.println(response.toString());
+                        out.flush();
+
+                        // GỬI response thành công TRƯỚC, sau đó mới broadcast
+                        try {
+                            Thread.sleep(100); // Chờ 100ms để client kịp setup listener
+                        } catch (InterruptedException e) {
+                        }
+
+                        // Bây giờ mới broadcast
+                        broadcastOnlineStatus();
+
                     } else {
-                        System.out.println("fallllllll");
+                        System.out.println("Login failed for username: " + username);
                         out.println("{\"status\":\"fail\"}");
                     }
                 } else if (isLoggedIn && line.contains("\"action\":\"logout\"")) {
+                    if (clientUserId != -1) {
+                        onlinePlayers.remove(clientUserId);
+                        onlineUsernames.remove(clientUserId);
+                        System.out.println("🔴 User " + clientUsername + " logged out");
+                        broadcastOnlineStatus();
+                    }
                     out.println("{\"status\":\"logged_out\"}");
                     break;
                 } else if (line.contains("\"action\":\"register\"")) {
@@ -93,7 +128,6 @@ public class SimpleServer {
                     out.println(ok ? "{\"status\":\"success\"}" : "{\"status\":\"fail\",\"error\":\"db_error\"}");
                 } else if (line.contains("\"action\":\"ranking\"")) {
                     var users = UserDAO.getAllUsers();
-
 
                     // Tạo JSON array chứa danh sách top
                     JSONArray jsonArray = new JSONArray();
@@ -118,8 +152,7 @@ public class SimpleServer {
                     out.println(response.toString());
                     out.flush();
                     System.out.println("[SERVER] Sent ranking to client, total: " + users.size());
-                }
-                //xu ly yeu cau xem lich su
+                } //xu ly yeu cau xem lich su
                 else if (line.contains("\"action\":\"history\"")) {
                     JSONObject request = new JSONObject(line);
                     int userId = request.getInt("userId");
@@ -186,12 +219,25 @@ public class SimpleServer {
                     out.flush();
 
                     System.out.println("📤 Đã gửi lịch sử đấu cho userId " + userId);
+                } else if (line.contains("\"action\":\"getOnlinePlayers\"")) {
+                    handleGetOnlinePlayers(out, clientUserId);
+                } else if (line.contains("\"action\":\"sendInvite\"")) {
+                    handleSendInvite(line, out);
                 }
 
             }
         } catch (Exception e) {
             System.out.println("Client disconnected unexpectedly: " + e.getMessage());
         } finally {
+            if (clientUserId != -1) {
+                onlinePlayers.remove(clientUserId);
+                onlineUsernames.remove(clientUserId);
+                isListening.remove(clientUserId);
+                System.out.println("🔴 User " + clientUsername + " (ID: " + clientUserId + ") disconnected");
+
+                // Broadcast để thông báo cho tất cả client khác biết user này offline
+                broadcastOnlineStatus();
+            }
             try {
                 s.close();
             } catch (Exception ex) {
@@ -209,5 +255,108 @@ public class SimpleServer {
         int start = idx + pattern.length();
         int end = line.indexOf("\"", start);
         return line.substring(start, end);
+    }
+
+    private static void handleGetOnlinePlayers(PrintWriter out, int currentUserId) {
+        JSONArray playersArray = new JSONArray();
+
+        for (Map.Entry<Integer, String> entry : onlineUsernames.entrySet()) {
+            int userId = entry.getKey();
+            String username = entry.getValue();
+
+            // QUAN TRỌNG: Không thêm chính người dùng hiện tại
+            if (userId != currentUserId) {
+                JSONObject playerObj = new JSONObject();
+                playerObj.put("id", userId);
+                playerObj.put("username", username);
+                playersArray.put(playerObj);
+            }
+        }
+
+        JSONObject response = new JSONObject();
+        response.put("status", "success");
+        response.put("players", playersArray);
+        response.put("count", playersArray.length());
+
+        out.println(response.toString());
+        out.flush();
+        System.out.println("📤 Sent online players list. Count: " + playersArray.length());
+    }
+
+    private static void handleSendInvite(String line, PrintWriter senderOut) {
+        try {
+            JSONObject request = new JSONObject(line);
+            int toUserId = request.getInt("toUserId");
+            int fromUserId = request.getInt("fromUserId");
+            String fromUsername = request.getString("fromUsername");
+
+            PrintWriter targetOut = onlinePlayers.get(toUserId);
+
+            if (targetOut != null) {
+                // Gửi thông báo cho người nhận
+                JSONObject invitation = new JSONObject();
+                invitation.put("type", "invitation");
+                invitation.put("fromUserId", fromUserId);
+                invitation.put("fromUsername", fromUsername);
+
+                targetOut.println(invitation.toString());
+                targetOut.flush();
+
+                // Thông báo thành công cho người gửi
+                JSONObject response = new JSONObject();
+                response.put("status", "success");
+                response.put("message", "Invitation sent");
+                senderOut.println(response.toString());
+                senderOut.flush();
+
+                System.out.println("💌 Invitation sent from " + fromUsername + " to userId " + toUserId);
+            } else {
+                // Người nhận offline
+                JSONObject response = new JSONObject();
+                response.put("status", "fail");
+                response.put("error", "user_offline");
+                senderOut.println(response.toString());
+                senderOut.flush();
+
+                System.out.println("❌ User " + toUserId + " is offline");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handling invite: " + e.getMessage());
+        }
+    }
+
+    // Thêm 1 Map để track client nào đang lắng nghe
+    private static Map<Integer, Boolean> isListening = Collections.synchronizedMap(new HashMap<>());
+
+// Khi client kết nối listener (từ OnlineController)
+// Server biết client này đang lắng nghe
+// (Bạn cần thêm action "startListening" ở server)
+    private static void broadcastOnlineStatus() {
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+        }
+
+        JSONArray playersArray = new JSONArray();
+
+        for (Map.Entry<Integer, String> entry : onlineUsernames.entrySet()) {
+            JSONObject playerObj = new JSONObject();
+            playerObj.put("id", entry.getKey());
+            playerObj.put("username", entry.getValue());
+            playersArray.put(playerObj);
+        }
+
+        JSONObject notification = new JSONObject();
+        notification.put("type", "online_update");
+        notification.put("players", playersArray);
+        notification.put("count", playersArray.length());
+
+        // Chỉ gửi cho client đang lắng nghe (có listener socket)
+        for (Map.Entry<Integer, PrintWriter> entry : onlinePlayers.entrySet()) {
+            if (isListening.getOrDefault(entry.getKey(), false)) {
+                entry.getValue().println(notification.toString());
+                entry.getValue().flush();
+            }
+        }
     }
 }

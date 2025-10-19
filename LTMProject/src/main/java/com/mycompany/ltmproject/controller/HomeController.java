@@ -60,5 +60,17 @@ public class HomeController {
             e.printStackTrace();
         }
     }
-
+    
+    public void handleViewOnlinePlayers(ActionEvent event) {
+    try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/online.fxml"));
+        Parent root = loader.load();
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        stage.setScene(new Scene(root, 800, 520));
+        stage.setTitle("Người chơi online");
+        stage.show();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
 }
