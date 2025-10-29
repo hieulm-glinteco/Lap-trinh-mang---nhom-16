@@ -4,7 +4,7 @@
 <?import javafx.scene.control.*?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.mycompany.ltmproject.controller.OnlineController"
+           fx:controller="com.mycompany.ltmproject.controller.OnlineController"
            minWidth="800" prefWidth="800" maxWidth="800"
            minHeight="520" prefHeight="520" maxHeight="520"
            style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
@@ -21,6 +21,13 @@
                 <Label text="NGƯỜI CHƠI ONLINE" layoutX="150" layoutY="20"
                        style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
 
+                <Label fx:id="statusLabel"
+                       text="Đang tải danh sách..."
+                       layoutX="50"
+                       layoutY="295"
+                       prefWidth="400"
+                       alignment="CENTER"
+                       style="-fx-text-fill: #2193b0; -fx-font-size: 14px; -fx-font-weight: bold;" />
                 <!-- Bảng danh sách -->
                 <TableView fx:id="onlineTable" layoutX="50" layoutY="70" prefWidth="400" prefHeight="220">
                     <columns>
@@ -29,12 +36,12 @@
                         <TableColumn fx:id="colInvite" text="Mời" prefWidth="140"/>
                     </columns>
                 </TableView>
-
+                
                 <!-- Nút trở về -->
                 <Button fx:id="backButton" text="Trở về" layoutX="190" layoutY="310" prefWidth="120" prefHeight="36"
                         style="-fx-background-color: transparent; -fx-border-color: #2193b0;
                                -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;" onAction="#handleBack"
-                        />
+                />
             </children>
         </AnchorPane>
     </children>

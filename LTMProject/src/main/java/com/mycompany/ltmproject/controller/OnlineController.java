@@ -20,7 +20,8 @@ import org.cloudinary.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class OnlineController {
 
@@ -144,7 +145,34 @@ public class OnlineController {
                             Platform.runLater(() -> {
                                 handleInvitationReceived(fromUsername, fromUserId);
                             });
+                        } else if ("invite_response".equals(type)) {
+                            String fromUsername = json.getString("fromUsername");
+                            boolean accepted = json.getBoolean("accepted");
+
+                            Platform.runLater(() -> {
+                                if (accepted) {
+                                        showAlert("🎮 Trận đấu bắt đầu!", fromUsername + " đã chấp nhận lời mời của bạn!");
+                                        try {
+                                            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/gameInterface.fxml"));
+                                            Parent root = loader.load();
+                                            com.mycompany.ltmproject.controller.GameController gameController = loader.getController();
+                                            if (gameController != null) {
+                                                gameController.setMatchContext(-1, fromUsername);
+                                            }
+                                            Stage stage = (Stage) statusLabel.getScene().getWindow();
+                                            stage.setScene(new Scene(root, 800, 600));
+                                            stage.setTitle("Trận đấu với " + fromUsername);
+                                            stage.show();
+                                        } catch (IOException ex) {
+                                            Logger.getLogger(OnlineController.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+
+                                } else {
+                                    showAlert("Từ chối", fromUsername + " đã từ chối lời mời của bạn");
+                                }
+                            });
                         }
+
                     } catch (Exception e) {
                         System.err.println("⚠️ Error parsing message: " + e.getMessage());
                     }
@@ -172,10 +200,27 @@ public class OnlineController {
         alert.showAndWait().ifPresent(result -> {
             if (result == acceptBtn) {
                 System.out.println("✅ Accepted invitation from " + fromUsername);
-                // TODO: Thực hiện logic bắt đầu trò chơi
+                sendInviteResponse(fromUserId, true);
+                showAlert("Bắt đầu", "🎮 Bắt đầu trận đấu với " + fromUsername + "!");
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/gameInterface.fxml"));
+                    Parent root = loader.load();
+                    com.mycompany.ltmproject.controller.GameController gameController = loader.getController();
+                    if (gameController != null) {
+                        gameController.setMatchContext(fromUserId, fromUsername);
+                    }
+                    Stage stage = (Stage) statusLabel.getScene().getWindow();
+                    stage.setScene(new Scene(root, 800, 600));
+                    stage.setTitle("Trận đấu với " + fromUsername);
+                    stage.show();
+                } catch (IOException ex) {
+                    Logger.getLogger(OnlineController.class.getName()).log(Level.SEVERE, null, ex);
+                }
             } else {
                 System.out.println("❌ Declined invitation from " + fromUsername);
+                sendInviteResponse(fromUserId, false);
             }
+
         });
     }
 
@@ -227,6 +272,18 @@ public class OnlineController {
                 System.err.println("❌ Error sending invite: " + e.getMessage());
                 Platform.runLater(() -> showAlert("Lỗi", "❌ Lỗi kết nối"));
             }
+        }).start();
+    }
+
+    private void sendInviteResponse(int toUserId, boolean accepted) {
+        new Thread(() -> {
+            JSONObject response = new JSONObject();
+            response.put("action", "respondInvite");
+            response.put("fromUserId", currentUser.getId());
+            response.put("toUserId", toUserId);
+            response.put("fromUsername", currentUser.getUsername());
+            response.put("accepted", accepted);
+            clientSocket.send(response.toString());
         }).start();
     }
 

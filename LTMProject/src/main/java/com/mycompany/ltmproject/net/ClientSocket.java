@@ -18,6 +18,7 @@ public class ClientSocket {
     // Socket riêng để lắng nghe realtime updates (tạo khi cần)
     private Socket listenerSocket;
     private BufferedReader listenerIn;
+    private PrintWriter listenerOut;
     private boolean listenerConnected = false;
 
     public static ClientSocket getInstance() {
@@ -30,6 +31,9 @@ public class ClientSocket {
     // Kết nối chính - gọi lần đầu (login)
     public void connect(String host, int port) throws IOException {
         socket = new Socket(host, port);
+        try {
+            socket.setTcpNoDelay(true);
+        } catch (Exception ignored) {}
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
     }
@@ -44,8 +48,23 @@ public class ClientSocket {
         try {
             listenerSocket = new Socket(host, port);
             listenerIn = new BufferedReader(new InputStreamReader(listenerSocket.getInputStream()));
+            listenerOut = new PrintWriter(listenerSocket.getOutputStream(), true);
             listenerConnected = true;
             System.out.println("✅ Listener socket connected");
+
+            // Gửi handshake để server biết user này là ai và sẽ nhận realtime
+            try {
+                org.cloudinary.json.JSONObject hello = new org.cloudinary.json.JSONObject();
+                hello.put("action", "startListening");
+                try {
+                    com.mycompany.ltmproject.model.User u = com.mycompany.ltmproject.session.SessionManager.getCurrentUser();
+                    if (u != null) {
+                        hello.put("userId", u.getId());
+                    }
+                } catch (Exception ignored) {}
+                listenerOut.println(hello.toString());
+                listenerOut.flush();
+            } catch (Exception ignored) {}
         } catch (IOException e) {
             System.err.println("❌ Failed to connect listener socket: " + e.getMessage());
             throw e;
@@ -58,6 +77,7 @@ public class ClientSocket {
             try {
                 listenerSocket.close();
                 listenerIn = null;
+                listenerOut = null;
                 listenerConnected = false;
                 System.out.println("✅ Listener socket disconnected");
             } catch (IOException e) {
@@ -66,13 +86,13 @@ public class ClientSocket {
         }
     }
 
-    public void send(String message) {
+    public synchronized void send(String message) {
         if (out != null) {
             out.println(message);
         }
     }
 
-    public String receive() throws IOException {
+    public synchronized String receive() throws IOException {
         if (in != null) {
             return in.readLine();
         }
@@ -82,6 +102,13 @@ public class ClientSocket {
     // Dùng cho listener thread
     public BufferedReader getListenerReader() {
         return listenerIn;
+    }
+
+    // Gửi message qua listener socket (nếu cần)
+    public synchronized void sendListener(String message) {
+        if (listenerOut != null) {
+            listenerOut.println(message);
+        }
     }
 
     public boolean isListenerConnected() {

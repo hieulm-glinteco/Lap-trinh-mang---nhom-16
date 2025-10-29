@@ -105,7 +105,7 @@ public class HistoryController {
             clientSocket.send(historyRequest.toString());
 
             String response = clientSocket.receive();
-            System.out.println("📩 History Response: " + response);
+            System.out.println("History Response: " + response);
 
             if (response == null || response.isEmpty()) {
                 System.err.println("Empty response from server");

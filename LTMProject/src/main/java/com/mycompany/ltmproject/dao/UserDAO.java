@@ -64,11 +64,7 @@ public class UserDAO {
         try (Connection conn = DB.get(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs != null) {
-                    return false;
-                } else {
-                    return true;
-                }
+                return rs.next();
             } catch (Exception e) {
                 e.printStackTrace();
             }

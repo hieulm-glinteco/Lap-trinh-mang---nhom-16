@@ -27,6 +27,8 @@ public class SimpleServer {
 
     private static Map<Integer, PrintWriter> onlinePlayers = Collections.synchronizedMap(new HashMap<>());
     private static Map<Integer, String> onlineUsernames = Collections.synchronizedMap(new HashMap<>());
+    // Kênh output dành cho socket lắng nghe realtime
+    private static Map<Integer, PrintWriter> listenerOutputs = Collections.synchronizedMap(new HashMap<>());
 
     public static void main(String[] args) throws IOException {
         ServerSocket ss = new ServerSocket(8888);
@@ -40,12 +42,13 @@ public class SimpleServer {
 
     private static void handleClient(Socket s) {
         Map<Integer, PrintWriter> clientOutputStreams = new HashMap<>();
-            int clientUserId = -1;
-            String clientUsername = "";
+        int clientUserId = -1;
+        String clientUsername = "";
+        int listenerForUserId = -1;
         try (
                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream())); PrintWriter out = new PrintWriter(s.getOutputStream(), true)) {
             boolean isLoggedIn = false;
-            
+
             String currentUser = null;
             String line;
             while ((line = in.readLine()) != null) {
@@ -223,6 +226,26 @@ public class SimpleServer {
                     handleGetOnlinePlayers(out, clientUserId);
                 } else if (line.contains("\"action\":\"sendInvite\"")) {
                     handleSendInvite(line, out);
+                } else if (line.contains("\"action\":\"respondInvite\"")) {
+                    handleRespondInvite(line);
+                } else if (line.contains("\"action\":\"startListening\"")) {
+                    try {
+                        JSONObject req = new JSONObject(line);
+                        int uid = -1;
+                        if (req.has("userId")) {
+                            uid = req.getInt("userId");
+                        } else if (clientUserId != -1) {
+                            uid = clientUserId;
+                        }
+                        if (uid != -1) {
+                            listenerOutputs.put(uid, out);
+                            isListening.put(uid, true);
+                            listenerForUserId = uid;
+                            System.out.println("👂 Start listening for userId=" + uid);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("⚠️ startListening parse error: " + e.getMessage());
+                    }
                 }
 
             }
@@ -237,6 +260,10 @@ public class SimpleServer {
 
                 // Broadcast để thông báo cho tất cả client khác biết user này offline
                 broadcastOnlineStatus();
+            }
+            if (listenerForUserId != -1) {
+                listenerOutputs.remove(listenerForUserId);
+                isListening.remove(listenerForUserId);
             }
             try {
                 s.close();
@@ -290,7 +317,10 @@ public class SimpleServer {
             int fromUserId = request.getInt("fromUserId");
             String fromUsername = request.getString("fromUsername");
 
-            PrintWriter targetOut = onlinePlayers.get(toUserId);
+            PrintWriter targetOut = listenerOutputs.get(toUserId);
+            if (targetOut == null) {
+                targetOut = onlinePlayers.get(toUserId);
+            }
 
             if (targetOut != null) {
                 // Gửi thông báo cho người nhận
@@ -351,12 +381,42 @@ public class SimpleServer {
         notification.put("players", playersArray);
         notification.put("count", playersArray.length());
 
-        // Chỉ gửi cho client đang lắng nghe (có listener socket)
-        for (Map.Entry<Integer, PrintWriter> entry : onlinePlayers.entrySet()) {
-            if (isListening.getOrDefault(entry.getKey(), false)) {
-                entry.getValue().println(notification.toString());
-                entry.getValue().flush();
-            }
+        // Gửi cho tất cả client có kênh listener
+        for (Map.Entry<Integer, PrintWriter> entry : listenerOutputs.entrySet()) {
+            entry.getValue().println(notification.toString());
+            entry.getValue().flush();
         }
     }
+
+    private static void handleRespondInvite(String line) {
+        try {
+            JSONObject request = new JSONObject(line);
+            int fromUserId = request.getInt("fromUserId");   // Người phản hồi (người nhận lời mời)
+            int toUserId = request.getInt("toUserId");       // Người mời
+            boolean accepted = request.getBoolean("accepted");
+            String fromUsername = request.getString("fromUsername");
+
+            PrintWriter toOut = listenerOutputs.get(toUserId);
+            if (toOut == null) {
+                toOut = onlinePlayers.get(toUserId);
+            }
+
+            if (toOut != null) {
+                JSONObject response = new JSONObject();
+                response.put("type", "invite_response");
+                response.put("fromUserId", fromUserId);
+                response.put("fromUsername", fromUsername);
+                response.put("accepted", accepted);
+
+                toOut.println(response.toString());
+                toOut.flush();
+
+                System.out.println("📨 " + fromUsername + " "
+                        + (accepted ? "accepted" : "declined") + " invite from userId " + toUserId);
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handling respondInvite: " + e.getMessage());
+        }
+    }
+
 }
