@@ -7,7 +7,9 @@
            fx:controller="com.mycompany.ltmproject.controller.OnlineController"
            minWidth="800" prefWidth="800" maxWidth="800"
            minHeight="520" prefHeight="520" maxHeight="520"
-           style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
+           style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);"
+           fx:controller="com.mycompany.ltmproject.controller.OnlineController"
+>
 
     <children>
         <AnchorPane minWidth="500" prefWidth="500" maxWidth="500"
@@ -40,8 +42,14 @@
                 <!-- Nút trở về -->
                 <Button fx:id="backButton" text="Trở về" layoutX="190" layoutY="310" prefWidth="120" prefHeight="36"
                         style="-fx-background-color: transparent; -fx-border-color: #2193b0;
+<<<<<<< HEAD
                                -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;" onAction="#handleBack"
                 />
+=======
+                               -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;"
+                               onAction="#handleBack"
+                        />
+>>>>>>> origin/HoangND
             </children>
         </AnchorPane>
     </children>

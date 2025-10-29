@@ -1,10 +1,11 @@
 package com.mycompany.ltmproject.net;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import org.cloudinary.json.JSONArray;
 
 public class ClientSocket {
 
@@ -14,6 +15,7 @@ public class ClientSocket {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
+<<<<<<< HEAD
 
     // Socket riêng để lắng nghe realtime updates (tạo khi cần)
     private Socket listenerSocket;
@@ -30,6 +32,17 @@ public class ClientSocket {
 
     // Kết nối chính - gọi lần đầu (login)
     public void connect(String host, int port) throws IOException {
+=======
+    private final List<String> onlineUsers = new ArrayList<>();
+    private Thread listenerThread;
+
+    public static ClientSocket getInstance(){
+        if(instance == null) instance = new ClientSocket();
+        return instance;
+    }
+
+    public void connect(String host, int port) throws IOException{
+>>>>>>> origin/HoangND
         socket = new Socket(host, port);
         try {
             socket.setTcpNoDelay(true);
@@ -38,6 +51,7 @@ public class ClientSocket {
         out = new PrintWriter(socket.getOutputStream(), true);
     }
 
+<<<<<<< HEAD
     // Kết nối riêng cho listener - gọi khi vào online players
     public synchronized void connectListener(String host, int port) throws IOException {
         // Kiểm tra xem đã kết nối chưa
@@ -138,5 +152,52 @@ public class ClientSocket {
                 e.printStackTrace();
             }
         }
+=======
+    public void send(String message) {
+        if (out != null) {
+            out.println(message);
+        }
+    }
+
+    public String receive() throws IOException {
+        return in.readLine();
+    }
+
+    /** 🔸 Chỉ start listener 1 lần duy nhất */
+    public void startListening(Consumer<String> onMessage) {
+        if (listenerThread != null && listenerThread.isAlive()) return;
+
+        listenerThread = new Thread(() -> {
+            try {
+                String line;
+                while ((line = in.readLine()) != null) {
+                    onMessage.accept(line);
+                }
+            } catch (IOException e) {
+                System.out.println("⚠️ Mất kết nối tới server: " + e.getMessage());
+            }
+        });
+        listenerThread.setDaemon(true);
+        listenerThread.start();
+    }
+
+    /** ✅ Cập nhật danh sách online */
+    public void updateOnlineUsers(JSONArray arr) {
+        onlineUsers.clear();
+        for (int i = 0; i < arr.length(); i++) {
+            onlineUsers.add(arr.getString(i));
+        }
+    }
+
+    public List<String> getOnlineUsers() {
+        return onlineUsers;
+    }
+
+    /** ✅ Đóng kết nối */
+    public void close() {
+        try {
+            if (socket != null && !socket.isClosed()) socket.close();
+        } catch (IOException ignored) {}
+>>>>>>> origin/HoangND
     }
 }

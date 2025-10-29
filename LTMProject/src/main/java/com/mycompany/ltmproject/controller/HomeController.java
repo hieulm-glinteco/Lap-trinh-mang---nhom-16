@@ -1,6 +1,7 @@
 package com.mycompany.ltmproject.controller;
 
 import com.mycompany.ltmproject.model.User;
+import com.mycompany.ltmproject.net.ClientSocket;
 import com.mycompany.ltmproject.session.SessionManager;
 import java.io.IOException;
 import javafx.event.ActionEvent;
@@ -9,6 +10,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.cloudinary.json.JSONObject;
 
 public class HomeController {
 
@@ -16,6 +18,11 @@ public class HomeController {
 
     public void handleLogout(ActionEvent e) {
         try {
+            // ✅ Gửi thông báo logout đến server
+            JSONObject logoutReq = new JSONObject();
+            logoutReq.put("action", "logout");
+            ClientSocket.getInstance().send(logoutReq.toString());
+            
             // ✅ Xóa user khỏi session khi logout
             SessionManager.clearSession();
 
@@ -60,6 +67,7 @@ public class HomeController {
             e.printStackTrace();
         }
     }
+<<<<<<< HEAD
     
     public void handleViewOnlinePlayers(ActionEvent event) {
     try {
@@ -71,6 +79,20 @@ public class HomeController {
         stage.show();
     } catch (IOException e) {
         e.printStackTrace();
+=======
+
+    public void handleOnlinePlayer(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/online.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setScene(new Scene(root, 800, 520));
+            stage.setTitle("Người chơi online");
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+>>>>>>> origin/HoangND
     }
 }
 }
