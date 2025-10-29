@@ -18,6 +18,7 @@ public class ClientSocket {
     // Socket riêng để lắng nghe realtime updates (tạo khi cần)
     private Socket listenerSocket;
     private BufferedReader listenerIn;
+    private PrintWriter listenerOut;
     private boolean listenerConnected = false;
 
     public static ClientSocket getInstance() {
@@ -44,6 +45,7 @@ public class ClientSocket {
         try {
             listenerSocket = new Socket(host, port);
             listenerIn = new BufferedReader(new InputStreamReader(listenerSocket.getInputStream()));
+            listenerOut = new PrintWriter(listenerSocket.getOutputStream(), true);
             listenerConnected = true;
             System.out.println("✅ Listener socket connected");
         } catch (IOException e) {
@@ -56,8 +58,12 @@ public class ClientSocket {
     public synchronized void disconnectListener() {
         if (listenerSocket != null && listenerConnected) {
             try {
+                if (listenerOut != null) {
+                    listenerOut.flush();
+                }
                 listenerSocket.close();
                 listenerIn = null;
+                listenerOut = null;
                 listenerConnected = false;
                 System.out.println("✅ Listener socket disconnected");
             } catch (IOException e) {
@@ -82,6 +88,13 @@ public class ClientSocket {
     // Dùng cho listener thread
     public BufferedReader getListenerReader() {
         return listenerIn;
+    }
+
+    // Gửi qua listener socket
+    public void sendOnListener(String message) {
+        if (listenerOut != null) {
+            listenerOut.println(message);
+        }
     }
 
     public boolean isListenerConnected() {

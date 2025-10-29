@@ -21,6 +21,10 @@
                 <Label text="NGƯỜI CHƠI ONLINE" layoutX="150" layoutY="20"
                        style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
 
+                <!-- Trạng thái số người online -->
+                <Label fx:id="statusLabel" text="Đang tải..." layoutX="50" layoutY="50"
+                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
+
                 <!-- Bảng danh sách -->
                 <TableView fx:id="onlineTable" layoutX="50" layoutY="70" prefWidth="400" prefHeight="220">
                     <columns>

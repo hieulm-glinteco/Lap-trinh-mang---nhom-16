@@ -20,7 +20,6 @@ import org.cloudinary.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 public class OnlineController {
 
@@ -47,6 +46,7 @@ public class OnlineController {
     private User currentUser;
     private Thread listenerThread;
     private volatile boolean isRunning = true;
+    private Alert inviteSentAlert; // lưu dialog mời thành công để đóng khi đối thủ chấp nhận
 
     @FXML
     public void initialize() {
@@ -120,6 +120,16 @@ public class OnlineController {
             try {
                 // Tạo kết nối listener riêng
                 clientSocket.connectListener("localhost", 8888);
+                // Thông báo cho server biết user này bắt đầu lắng nghe
+                try {
+                    JSONObject startListening = new JSONObject();
+                    startListening.put("action", "startListening");
+                    startListening.put("userId", currentUser.getId());
+                    // Gửi qua listener socket để server gắn writer này làm listener
+                    clientSocket.sendOnListener(startListening.toString());
+                } catch (Exception ex) {
+                    System.err.println("⚠️ Failed to send startListening: " + ex.getMessage());
+                }
                 BufferedReader in = clientSocket.getListenerReader();
 
                 String message;
@@ -143,6 +153,18 @@ public class OnlineController {
 
                             Platform.runLater(() -> {
                                 handleInvitationReceived(fromUsername, fromUserId);
+                            });
+                        } else if ("start_game".equals(type)) {
+                            String opponentUsername = json.optString("opponentUsername", "Đối thủ");
+                            int sessionId = json.optInt("sessionId", 0);
+                            boolean isHost = json.optBoolean("isHost", false);
+                            Platform.runLater(() -> {
+                                // Đóng thông báo "đã gửi lời mời" nếu còn hiển thị
+                                if (inviteSentAlert != null) {
+                                    try { inviteSentAlert.close(); } catch (Exception ignore) {}
+                                    inviteSentAlert = null;
+                                }
+                                startGame(opponentUsername, sessionId, isHost);
                             });
                         }
                     } catch (Exception e) {
@@ -172,7 +194,17 @@ public class OnlineController {
         alert.showAndWait().ifPresent(result -> {
             if (result == acceptBtn) {
                 System.out.println("✅ Accepted invitation from " + fromUsername);
-                // TODO: Thực hiện logic bắt đầu trò chơi
+                new Thread(() -> {
+                    try {
+                        JSONObject accept = new JSONObject();
+                        accept.put("action", "acceptInvite");
+                        accept.put("fromUserId", currentUser.getId());
+                        accept.put("toUserId", fromUserId);
+                        clientSocket.send(accept.toString());
+                    } catch (Exception ex) {
+                        System.err.println("❌ Error sending acceptInvite: " + ex.getMessage());
+                    }
+                }).start();
             } else {
                 System.out.println("❌ Declined invitation from " + fromUsername);
             }
@@ -195,6 +227,39 @@ public class OnlineController {
         return btn;
     }
 
+    private void startGame(String opponentUsername, int sessionId, boolean isHost) {
+        try {
+            // Đóng listener để chuyển scene mượt mà
+            isRunning = false;
+            clientSocket.disconnectListener();
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/gameInterface.fxml"));
+            Parent root = loader.load();
+            // Truyền tham số cho controller
+            try {
+                GameController gc = loader.getController();
+                // Giả sử GameController có setter (chúng ta sẽ thêm setter dưới đây)
+                gcSetSession(gc, sessionId, isHost);
+            } catch (Exception ignore) {}
+
+            Stage stage = (Stage) onlineTable.getScene().getWindow();
+            stage.setScene(new Scene(root, 700, 500));
+            stage.setTitle("Ván đấu với " + opponentUsername);
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Lỗi", "Không thể vào ván đấu");
+        }
+    }
+
+    // Không đổi chữ ký GameController, dùng phản chiếu an toàn
+    private void gcSetSession(Object controller, int sessionId, boolean isHost) {
+        try {
+            controller.getClass().getMethod("setSessionInfo", int.class, boolean.class)
+                    .invoke(controller, sessionId, isHost);
+        } catch (Exception ignored) {}
+    }
+
     private void handleInvite(int playerId, String username, Button btn) {
         new Thread(() -> {
             try {
@@ -211,7 +276,14 @@ public class OnlineController {
 
                 Platform.runLater(() -> {
                     if ("success".equals(jsonResponse.getString("status"))) {
-                        showAlert("Thành công", "✅ Đã gửi lời mời cho " + username);
+                        // Tạo dialog không chặn để có thể tự đóng khi đối thủ chấp nhận
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Thành công");
+                        alert.setHeaderText(null);
+                        alert.setContentText("✅ Đã gửi lời mời cho " + username);
+                        inviteSentAlert = alert;
+                        alert.show();
+
                         btn.setDisable(true);
                         btn.setText("Đã mời");
                     } else {

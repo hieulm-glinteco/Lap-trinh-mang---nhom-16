@@ -27,6 +27,13 @@ public class SimpleServer {
 
     private static Map<Integer, PrintWriter> onlinePlayers = Collections.synchronizedMap(new HashMap<>());
     private static Map<Integer, String> onlineUsernames = Collections.synchronizedMap(new HashMap<>());
+    // Writer của các kết nối listener (realtime)
+    private static Map<Integer, PrintWriter> listenerStreams = Collections.synchronizedMap(new HashMap<>());
+    // Tạm quản lý điểm và vòng theo session
+    private static Map<Integer, Integer> sessionScoreP1 = Collections.synchronizedMap(new HashMap<>());
+    private static Map<Integer, Integer> sessionScoreP2 = Collections.synchronizedMap(new HashMap<>());
+    private static Map<Integer, Integer> sessionHostUserId = Collections.synchronizedMap(new HashMap<>());
+    private static Map<Integer, Integer> sessionGuestUserId = Collections.synchronizedMap(new HashMap<>());
 
     public static void main(String[] args) throws IOException {
         ServerSocket ss = new ServerSocket(8888);
@@ -223,6 +230,29 @@ public class SimpleServer {
                     handleGetOnlinePlayers(out, clientUserId);
                 } else if (line.contains("\"action\":\"sendInvite\"")) {
                     handleSendInvite(line, out);
+                } else if (line.contains("\"action\":\"startListening\"")) {
+                    try {
+                        JSONObject req = new JSONObject(line);
+                        int userId = req.getInt("userId");
+                        // Đăng ký writer của kết nối hiện tại làm listener của user này
+                        listenerStreams.put(userId, out);
+                        isListening.put(userId, true);
+                        JSONObject resp = new JSONObject();
+                        resp.put("status", "ok");
+                        out.println(resp.toString());
+                        out.flush();
+                        System.out.println("👂 Now listening: userId=" + userId);
+                    } catch (Exception ex) {
+                        System.err.println("⚠️ Error startListening: " + ex.getMessage());
+                    }
+                } else if (line.contains("\"action\":\"acceptInvite\"")) {
+                    handleAcceptInvite(line, out);
+                } else if (line.contains("\"action\":\"requestRound\"")) {
+                    handleRequestRound(line, out);
+                } else if (line.contains("\"action\":\"submitAnswers\"")) {
+                    handleSubmitAnswers(line);
+                } else if (line.contains("\"action\":\"endGame\"")) {
+                    handleEndGame(line);
                 }
 
             }
@@ -290,7 +320,11 @@ public class SimpleServer {
             int fromUserId = request.getInt("fromUserId");
             String fromUsername = request.getString("fromUsername");
 
-            PrintWriter targetOut = onlinePlayers.get(toUserId);
+            // Ưu tiên gửi qua listener stream để client listener nhận được
+            PrintWriter targetOut = listenerStreams.get(toUserId);
+            if (targetOut == null) {
+                targetOut = onlinePlayers.get(toUserId);
+            }
 
             if (targetOut != null) {
                 // Gửi thông báo cho người nhận
@@ -325,6 +359,187 @@ public class SimpleServer {
         }
     }
 
+    private static void handleAcceptInvite(String line, PrintWriter acceptorOut) {
+        try {
+            JSONObject request = new JSONObject(line);
+            int fromUserId = request.getInt("fromUserId"); // the acceptor
+            int toUserId = request.getInt("toUserId"); // the inviter
+
+            String fromUsername = onlineUsernames.getOrDefault(fromUserId, "");
+            String toUsername = onlineUsernames.getOrDefault(toUserId, "");
+
+            // Optionally create a session in DB here and get sessionId
+            int sessionId = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+
+            // Track who is host/guest
+            sessionHostUserId.put(sessionId, toUserId);
+            sessionGuestUserId.put(sessionId, fromUserId);
+            sessionScoreP1.put(sessionId, 0);
+            sessionScoreP2.put(sessionId, 0);
+
+            JSONObject startGameForAcceptor = new JSONObject();
+            startGameForAcceptor.put("type", "start_game");
+            startGameForAcceptor.put("sessionId", sessionId);
+            startGameForAcceptor.put("opponentId", toUserId);
+            startGameForAcceptor.put("opponentUsername", toUsername);
+            startGameForAcceptor.put("isHost", false);
+
+            JSONObject startGameForInviter = new JSONObject();
+            startGameForInviter.put("type", "start_game");
+            startGameForInviter.put("sessionId", sessionId);
+            startGameForInviter.put("opponentId", fromUserId);
+            startGameForInviter.put("opponentUsername", fromUsername);
+            startGameForInviter.put("isHost", true);
+
+            // Send to acceptor (ưu tiên listener stream)
+            PrintWriter acceptorStream = listenerStreams.get(fromUserId);
+            if (acceptorStream == null) acceptorStream = acceptorOut;
+            acceptorStream.println(startGameForAcceptor.toString());
+            acceptorStream.flush();
+
+            // Send to inviter (ưu tiên listener stream)
+            PrintWriter inviterOut = listenerStreams.get(toUserId);
+            if (inviterOut == null) inviterOut = onlinePlayers.get(toUserId);
+            if (inviterOut != null) {
+                inviterOut.println(startGameForInviter.toString());
+                inviterOut.flush();
+            }
+
+            System.out.println("🎮 Start game between " + fromUsername + " and " + toUsername + ", sessionId=" + sessionId);
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handling acceptInvite: " + e.getMessage());
+        }
+    }
+
+    // Provide random image + expected numbers for a round
+    private static void handleRequestRound(String line, PrintWriter requesterOut) {
+        try {
+            JSONObject req = new JSONObject(line);
+            int sessionId = req.getInt("sessionId");
+
+            // Query DB for random image
+            String imageUrl = null;
+            int n1 = 0, n2 = 0, n3 = 0;
+            try (var conn = com.mycompany.ltmproject.util.DB.get();
+                 var ps = conn.prepareStatement("SELECT number1, number2, number3, filepath FROM Image ORDER BY RAND() LIMIT 1");
+                 var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    n1 = rs.getInt("number1");
+                    n2 = rs.getInt("number2");
+                    n3 = rs.getInt("number3");
+                    imageUrl = rs.getString("filepath");
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ DB error requestRound: " + e.getMessage());
+            }
+
+            JSONObject round = new JSONObject();
+            round.put("type", "round_data");
+            round.put("sessionId", sessionId);
+            round.put("imageUrl", imageUrl);
+            round.put("n1", n1);
+            round.put("n2", n2);
+            round.put("n3", n3);
+
+            // broadcast to both players via listener streams
+            PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
+            PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
+            if (host != null) { host.println(round.toString()); host.flush(); }
+            if (guest != null) { guest.println(round.toString()); guest.flush(); }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handleRequestRound: " + e.getMessage());
+        }
+    }
+
+    // Compute points for submitted answers and broadcast score update
+    private static void handleSubmitAnswers(String line) {
+        try {
+            JSONObject req = new JSONObject(line);
+            int sessionId = req.getInt("sessionId");
+            int userId = req.getInt("userId");
+            int e = req.getInt("e");
+            int s = req.getInt("s");
+            int f = req.getInt("f");
+            int n1 = req.getInt("n1");
+            int n2 = req.getInt("n2");
+            int n3 = req.getInt("n3");
+
+            int points = 0;
+            if (e == n1) points++;
+            if (s == n2) points++;
+            if (f == n3) points++;
+
+            // Update session score depending on who is who
+            Integer hostId = sessionHostUserId.get(sessionId);
+            if (hostId != null && hostId == userId) {
+                sessionScoreP1.put(sessionId, sessionScoreP1.getOrDefault(sessionId, 0) + points);
+            } else {
+                sessionScoreP2.put(sessionId, sessionScoreP2.getOrDefault(sessionId, 0) + points);
+            }
+
+            JSONObject update = new JSONObject();
+            update.put("type", "score_update");
+            update.put("sessionId", sessionId);
+            update.put("scoreP1", sessionScoreP1.getOrDefault(sessionId, 0));
+            update.put("scoreP2", sessionScoreP2.getOrDefault(sessionId, 0));
+
+            PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
+            PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
+            if (host != null) { host.println(update.toString()); host.flush(); }
+            if (guest != null) { guest.println(update.toString()); guest.flush(); }
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handleSubmitAnswers: " + e.getMessage());
+        }
+    }
+
+    private static void handleEndGame(String line) {
+        try {
+            JSONObject req = new JSONObject(line);
+            int sessionId = req.getInt("sessionId");
+
+            int p1 = sessionScoreP1.getOrDefault(sessionId, 0);
+            int p2 = sessionScoreP2.getOrDefault(sessionId, 0);
+            int hostId = sessionHostUserId.getOrDefault(sessionId, -1);
+            int guestId = sessionGuestUserId.getOrDefault(sessionId, -1);
+            int winner = 0;
+            if (p1 > p2) winner = hostId; else if (p2 > p1) winner = guestId;
+
+            // persist into DB
+            try (var conn = com.mycompany.ltmproject.util.DB.get();
+                 var ps = conn.prepareStatement(
+                         "INSERT INTO GameSession (Playerid1, Playerid2, start_time, end_time, playerscore1, playerscore2, winner) VALUES (?, ?, NOW(), NOW(), ?, ?, ?)")) {
+                ps.setInt(1, hostId);
+                ps.setInt(2, guestId);
+                ps.setInt(3, p1);
+                ps.setInt(4, p2);
+                ps.setInt(5, winner);
+                ps.executeUpdate();
+            } catch (Exception e) {
+                System.err.println("⚠️ DB save GameSession failed: " + e.getMessage());
+            }
+
+            JSONObject end = new JSONObject();
+            end.put("type", "game_end");
+            end.put("sessionId", sessionId);
+            end.put("scoreP1", p1);
+            end.put("scoreP2", p2);
+            end.put("winner", winner);
+
+            PrintWriter host = listenerStreams.get(hostId);
+            PrintWriter guest = listenerStreams.get(guestId);
+            if (host != null) { host.println(end.toString()); host.flush(); }
+            if (guest != null) { guest.println(end.toString()); guest.flush(); }
+
+            // cleanup
+            sessionScoreP1.remove(sessionId);
+            sessionScoreP2.remove(sessionId);
+            sessionHostUserId.remove(sessionId);
+            sessionGuestUserId.remove(sessionId);
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handleEndGame: " + e.getMessage());
+        }
+    }
+
     // Thêm 1 Map để track client nào đang lắng nghe
     private static Map<Integer, Boolean> isListening = Collections.synchronizedMap(new HashMap<>());
 
@@ -352,11 +567,9 @@ public class SimpleServer {
         notification.put("count", playersArray.length());
 
         // Chỉ gửi cho client đang lắng nghe (có listener socket)
-        for (Map.Entry<Integer, PrintWriter> entry : onlinePlayers.entrySet()) {
-            if (isListening.getOrDefault(entry.getKey(), false)) {
-                entry.getValue().println(notification.toString());
-                entry.getValue().flush();
-            }
+        for (Map.Entry<Integer, PrintWriter> entry : listenerStreams.entrySet()) {
+            entry.getValue().println(notification.toString());
+            entry.getValue().flush();
         }
     }
 }
