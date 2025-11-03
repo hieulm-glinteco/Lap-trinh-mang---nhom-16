@@ -16,6 +16,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Timer;
 import java.util.TimerTask;
+import javafx.scene.control.Alert;
+import javafx.stage.Stage;
 
 public class GameController {
 
@@ -57,6 +59,9 @@ public class GameController {
     private Thread listenerThread;
     private volatile boolean isRunning = true;
 
+    private int roundIndex = 0;
+    private final int totalRounds = 5;
+
     @FXML
     public void initialize() {
         // Socket setup and listener
@@ -84,7 +89,8 @@ public class GameController {
                     start.put("action", "startListening");
                     start.put("userId", SessionManager.getCurrentUser().getId());
                     socket.sendOnListener(start.toString());
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
 
                 var in = socket.getListenerReader();
                 String line;
@@ -94,29 +100,45 @@ public class GameController {
                         String type = msg.optString("type", "");
                         if ("round_data".equals(type)) {
                             int sId = msg.getInt("sessionId");
-                            if (this.sessionId != 0 && this.sessionId != sId) continue;
+                            if (this.sessionId != 0 && this.sessionId != sId) {
+                                return;
+                            }
+
                             String url = msg.optString("imageUrl", null);
                             correctElephant = msg.optInt("n1", 0);
                             correctSeal = msg.optInt("n2", 0);
                             correctFox = msg.optInt("n3", 0);
+
+                            roundIndex++; // tăng số vòng hiện tại
+
                             Platform.runLater(() -> {
                                 if (url != null && !url.isEmpty()) {
                                     try {
                                         javafx.scene.image.Image img = new javafx.scene.image.Image(url, true);
                                         animalImageView.setImage(img);
-                                    } catch (Exception ignored) {}
+                                    } catch (Exception ignored) {
+                                    }
                                 }
+
                                 // reset inputs
                                 txtElephant.clear();
                                 txtSeal.clear();
                                 txtFox.clear();
                                 btnSubmit.setDisable(false);
-                                timeLeftSeconds = 30;
                                 lblTimeLeft.setText("30s");
+                                timeLeftSeconds = 30;
+
+                                // restart countdown timer
+                                if (timer != null) {
+                                    timer.cancel();
+                                }
+                                startTimer();
                             });
                         } else if ("score_update".equals(type)) {
                             int sId = msg.getInt("sessionId");
-                            if (this.sessionId != 0 && this.sessionId != sId) continue;
+                            if (this.sessionId != 0 && this.sessionId != sId) {
+                                continue;
+                            }
                             int scoreP1 = msg.getInt("scoreP1");
                             int scoreP2 = msg.getInt("scoreP2");
                             Platform.runLater(() -> {
@@ -125,19 +147,41 @@ public class GameController {
                             });
                         } else if ("game_end".equals(type)) {
                             int sId = msg.getInt("sessionId");
-                            if (this.sessionId != 0 && this.sessionId != sId) continue;
-                            int winner = msg.optInt("winner", 0);
+                            if (this.sessionId != 0 && this.sessionId != sId) {
+                                return;
+                            }
+
+                            int scoreP1 = msg.getInt("scoreP1");
+                            int scoreP2 = msg.getInt("scoreP2");
+                            int winner = msg.getInt("winner");
                             Platform.runLater(() -> {
-                                btnSubmit.setDisable(true);
-                                // Simple end notification
-                                javafx.scene.control.Alert a = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                                a.setTitle("Kết thúc ván đấu");
-                                a.setHeaderText(null);
-                                a.setContentText(winner == 0 ? "Hòa" : ("Người thắng: " + (winner == SessionManager.getCurrentUser().getId() ? "Bạn" : "Đối thủ")));
-                                a.showAndWait();
+                                if (timer != null) {
+                                    timer.cancel();
+                                }
+                                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                String result;
+                                int myId = SessionManager.getCurrentUser().getId();
+                                if (winner == 0) {
+                                    result = "Hòa!";
+                                } else if (winner == myId) {
+                                    result = "Bạn thắng!";
+                                } else {
+                                    result = "Bạn thua!";
+                                }
+                                alert.setTitle("Kết quả trận đấu");
+                                alert.setHeaderText(result);
+                                alert.setContentText("Điểm của bạn: " + (winner == myId ? scoreP1 : scoreP2)
+                                        + "\nĐiểm đối thủ: " + (winner == myId ? scoreP2 : scoreP1));
+                                alert.showAndWait();
+
+                                // quay về màn hình chính hoặc đóng cửa sổ
+                                Stage stage = (Stage) btnSubmit.getScene().getWindow();
+                                stage.close();
                             });
                         }
-                    } catch (Exception ignored) {}
+
+                    } catch (Exception ignored) {
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -218,5 +262,3 @@ public class GameController {
         }
     }
 }
-
-

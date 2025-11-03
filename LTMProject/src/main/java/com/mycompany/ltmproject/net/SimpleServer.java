@@ -47,12 +47,12 @@ public class SimpleServer {
 
     private static void handleClient(Socket s) {
         Map<Integer, PrintWriter> clientOutputStreams = new HashMap<>();
-            int clientUserId = -1;
-            String clientUsername = "";
+        int clientUserId = -1;
+        String clientUsername = "";
         try (
                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream())); PrintWriter out = new PrintWriter(s.getOutputStream(), true)) {
             boolean isLoggedIn = false;
-            
+
             String currentUser = null;
             String line;
             while ((line = in.readLine()) != null) {
@@ -393,13 +393,17 @@ public class SimpleServer {
 
             // Send to acceptor (ưu tiên listener stream)
             PrintWriter acceptorStream = listenerStreams.get(fromUserId);
-            if (acceptorStream == null) acceptorStream = acceptorOut;
+            if (acceptorStream == null) {
+                acceptorStream = acceptorOut;
+            }
             acceptorStream.println(startGameForAcceptor.toString());
             acceptorStream.flush();
 
             // Send to inviter (ưu tiên listener stream)
             PrintWriter inviterOut = listenerStreams.get(toUserId);
-            if (inviterOut == null) inviterOut = onlinePlayers.get(toUserId);
+            if (inviterOut == null) {
+                inviterOut = onlinePlayers.get(toUserId);
+            }
             if (inviterOut != null) {
                 inviterOut.println(startGameForInviter.toString());
                 inviterOut.flush();
@@ -411,18 +415,27 @@ public class SimpleServer {
         }
     }
 
-    // Provide random image + expected numbers for a round
+    private static Map<Integer, Integer> sessionRoundCount = Collections.synchronizedMap(new HashMap<>());
+
     private static void handleRequestRound(String line, PrintWriter requesterOut) {
         try {
             JSONObject req = new JSONObject(line);
             int sessionId = req.getInt("sessionId");
 
-            // Query DB for random image
+            // tăng đếm vòng
+            int current = sessionRoundCount.getOrDefault(sessionId, 0) + 1;
+            sessionRoundCount.put(sessionId, current);
+
+            if (current > 5) {
+                handleEndGame(line);
+                sessionRoundCount.remove(sessionId);
+                return;
+            }
+
+            // Lấy ảnh ngẫu nhiên từ DB
             String imageUrl = null;
             int n1 = 0, n2 = 0, n3 = 0;
-            try (var conn = com.mycompany.ltmproject.util.DB.get();
-                 var ps = conn.prepareStatement("SELECT number1, number2, number3, filepath FROM Image ORDER BY RAND() LIMIT 1");
-                 var rs = ps.executeQuery()) {
+            try (var conn = com.mycompany.ltmproject.util.DB.get(); var ps = conn.prepareStatement("SELECT number1, number2, number3, filepath FROM Images ORDER BY RAND() LIMIT 1"); var rs = ps.executeQuery()) {
                 if (rs.next()) {
                     n1 = rs.getInt("number1");
                     n2 = rs.getInt("number2");
@@ -441,17 +454,26 @@ public class SimpleServer {
             round.put("n2", n2);
             round.put("n3", n3);
 
-            // broadcast to both players via listener streams
+            // gửi cho cả 2 người chơi
             PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
             PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
-            if (host != null) { host.println(round.toString()); host.flush(); }
-            if (guest != null) { guest.println(round.toString()); guest.flush(); }
+            if (host != null) {
+                host.println(round.toString());
+                host.flush();
+            }
+            if (guest != null) {
+                guest.println(round.toString());
+                guest.flush();
+            }
+
         } catch (Exception e) {
             System.err.println("⚠️ Error handleRequestRound: " + e.getMessage());
         }
     }
 
-    // Compute points for submitted answers and broadcast score update
+    // track number of submitted players per round
+    private static Map<Integer, Integer> sessionRoundSubmits = Collections.synchronizedMap(new HashMap<>());
+
     private static void handleSubmitAnswers(String line) {
         try {
             JSONObject req = new JSONObject(line);
@@ -465,11 +487,16 @@ public class SimpleServer {
             int n3 = req.getInt("n3");
 
             int points = 0;
-            if (e == n1) points++;
-            if (s == n2) points++;
-            if (f == n3) points++;
+            if (e == n1) {
+                points++;
+            }
+            if (s == n2) {
+                points++;
+            }
+            if (f == n3) {
+                points++;
+            }
 
-            // Update session score depending on who is who
             Integer hostId = sessionHostUserId.get(sessionId);
             if (hostId != null && hostId == userId) {
                 sessionScoreP1.put(sessionId, sessionScoreP1.getOrDefault(sessionId, 0) + points);
@@ -477,6 +504,7 @@ public class SimpleServer {
                 sessionScoreP2.put(sessionId, sessionScoreP2.getOrDefault(sessionId, 0) + points);
             }
 
+            // send updated score to both players
             JSONObject update = new JSONObject();
             update.put("type", "score_update");
             update.put("sessionId", sessionId);
@@ -485,8 +513,28 @@ public class SimpleServer {
 
             PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
             PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
-            if (host != null) { host.println(update.toString()); host.flush(); }
-            if (guest != null) { guest.println(update.toString()); guest.flush(); }
+            if (host != null) {
+                host.println(update.toString());
+                host.flush();
+            }
+            if (guest != null) {
+                guest.println(update.toString());
+                guest.flush();
+            }
+
+            // ✅ increase submit count
+            int count = sessionRoundSubmits.getOrDefault(sessionId, 0) + 1;
+            sessionRoundSubmits.put(sessionId, count);
+
+            // ✅ if both players submitted => trigger next round
+            if (count >= 2) {
+                sessionRoundSubmits.put(sessionId, 0); // reset for next round
+
+                JSONObject nextReq = new JSONObject();
+                nextReq.put("sessionId", sessionId);
+                handleRequestRound(nextReq.toString(), null); // next round or end game
+            }
+
         } catch (Exception e) {
             System.err.println("⚠️ Error handleSubmitAnswers: " + e.getMessage());
         }
@@ -502,12 +550,15 @@ public class SimpleServer {
             int hostId = sessionHostUserId.getOrDefault(sessionId, -1);
             int guestId = sessionGuestUserId.getOrDefault(sessionId, -1);
             int winner = 0;
-            if (p1 > p2) winner = hostId; else if (p2 > p1) winner = guestId;
+            if (p1 > p2) {
+                winner = hostId;
+            } else if (p2 > p1) {
+                winner = guestId;
+            }
 
             // persist into DB
-            try (var conn = com.mycompany.ltmproject.util.DB.get();
-                 var ps = conn.prepareStatement(
-                         "INSERT INTO GameSession (Playerid1, Playerid2, start_time, end_time, playerscore1, playerscore2, winner) VALUES (?, ?, NOW(), NOW(), ?, ?, ?)")) {
+            try (var conn = com.mycompany.ltmproject.util.DB.get(); var ps = conn.prepareStatement(
+                    "INSERT INTO GameSession (Playerid1, Playerid2, start_time, end_time, playerscore1, playerscore2, winner) VALUES (?, ?, NOW(), NOW(), ?, ?, ?)")) {
                 ps.setInt(1, hostId);
                 ps.setInt(2, guestId);
                 ps.setInt(3, p1);
@@ -527,8 +578,14 @@ public class SimpleServer {
 
             PrintWriter host = listenerStreams.get(hostId);
             PrintWriter guest = listenerStreams.get(guestId);
-            if (host != null) { host.println(end.toString()); host.flush(); }
-            if (guest != null) { guest.println(end.toString()); guest.flush(); }
+            if (host != null) {
+                host.println(end.toString());
+                host.flush();
+            }
+            if (guest != null) {
+                guest.println(end.toString());
+                guest.flush();
+            }
 
             // cleanup
             sessionScoreP1.remove(sessionId);
@@ -538,6 +595,7 @@ public class SimpleServer {
         } catch (Exception e) {
             System.err.println("⚠️ Error handleEndGame: " + e.getMessage());
         }
+
     }
 
     // Thêm 1 Map để track client nào đang lắng nghe
