@@ -45,7 +45,7 @@ public class GameController {
     @FXML
     private Button btnSubmit;
 
-    private volatile int timeLeftSeconds = 30;
+    private volatile int timeLeftSeconds = 60;
     private Timer timer;
 
     // Correct answers loaded from DB Image table
@@ -125,8 +125,8 @@ public class GameController {
                                 txtSeal.clear();
                                 txtFox.clear();
                                 btnSubmit.setDisable(false);
-                                lblTimeLeft.setText("30s");
-                                timeLeftSeconds = 30;
+                                lblTimeLeft.setText("60s");
+                                timeLeftSeconds = 60;
 
                                 // restart countdown timer
                                 if (timer != null) {
@@ -141,9 +141,18 @@ public class GameController {
                             }
                             int scoreP1 = msg.getInt("scoreP1");
                             int scoreP2 = msg.getInt("scoreP2");
+                            int player1Id = msg.getInt("player1Id");
+                            int player2Id = msg.getInt("player2Id");
                             Platform.runLater(() -> {
-                                scorePlayer1.setText(String.valueOf(scoreP1));
-                                scorePlayer2.setText(String.valueOf(scoreP2));
+                                int myId = SessionManager.getCurrentUser().getId();
+                                if (myId == player1Id) {
+                                    scorePlayer1.setText(String.valueOf(scoreP1));
+                                    scorePlayer2.setText(String.valueOf(scoreP2));
+                                } else if (myId == player2Id) {
+                                    scorePlayer1.setText(String.valueOf(scoreP2));
+                                    scorePlayer2.setText(String.valueOf(scoreP1));
+                                }
+
                             });
                         } else if ("game_end".equals(type)) {
                             int sId = msg.getInt("sessionId");

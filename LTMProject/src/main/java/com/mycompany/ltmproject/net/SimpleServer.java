@@ -453,7 +453,8 @@ public class SimpleServer {
             round.put("n1", n1);
             round.put("n2", n2);
             round.put("n3", n3);
-
+            
+            System.out.println(n1 + " " + n2 + " " + n3);
             // gửi cho cả 2 người chơi
             PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
             PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
@@ -485,16 +486,11 @@ public class SimpleServer {
             int n1 = req.getInt("n1");
             int n2 = req.getInt("n2");
             int n3 = req.getInt("n3");
-
+            
+            System.out.println(n1 + " " + n2 + " " + n3);
             int points = 0;
-            if (e == n1) {
-                points++;
-            }
-            if (s == n2) {
-                points++;
-            }
-            if (f == n3) {
-                points++;
+            if (e == n1 && s == n2 && f == n3) {
+                points += 5;
             }
 
             Integer hostId = sessionHostUserId.get(sessionId);
@@ -510,6 +506,10 @@ public class SimpleServer {
             update.put("sessionId", sessionId);
             update.put("scoreP1", sessionScoreP1.getOrDefault(sessionId, 0));
             update.put("scoreP2", sessionScoreP2.getOrDefault(sessionId, 0));
+            Integer player1Id = sessionHostUserId.get(sessionId);
+            Integer player2Id = sessionGuestUserId.get(sessionId);
+            update.put("player1Id", player1Id);
+            update.put("player2Id", player2Id);
 
             PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
             PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
