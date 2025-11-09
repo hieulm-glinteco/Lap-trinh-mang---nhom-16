@@ -62,5 +62,10 @@
         <Button fx:id="btnSubmit" text="Gửi" layoutX="270" layoutY="445" prefWidth="120" prefHeight="36"
                 style="-fx-background-color: linear-gradient(to right, #56ccf2, #2f80ed);
                        -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 15;" />
+        
+        <!-- NÚT THOÁT -->
+        <Button fx:id="btnQuit" text="Thoát" layoutX="550" layoutY="20" prefWidth="80" prefHeight="30"
+                style="-fx-background-color: linear-gradient(to right, #ff6b6b, #ee5a6f);
+                       -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" />
     </AnchorPane>
 </AnchorPane>

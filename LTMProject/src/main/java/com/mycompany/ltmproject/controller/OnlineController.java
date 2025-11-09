@@ -158,6 +158,7 @@ public class OnlineController {
                             String opponentUsername = json.optString("opponentUsername", "Đối thủ");
                             int sessionId = json.optInt("sessionId", 0);
                             boolean isHost = json.optBoolean("isHost", false);
+                            System.out.println("🎮 OnlineController: Received start_game, sessionId=" + sessionId + ", isHost=" + isHost + ", opponent=" + opponentUsername);
                             Platform.runLater(() -> {
                                 // Đóng thông báo "đã gửi lời mời" nếu còn hiển thị
                                 if (inviteSentAlert != null) {

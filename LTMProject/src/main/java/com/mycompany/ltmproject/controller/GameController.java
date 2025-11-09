@@ -17,7 +17,12 @@ import java.sql.ResultSet;
 import java.util.Timer;
 import java.util.TimerTask;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import java.io.IOException;
 
 public class GameController {
 
@@ -44,6 +49,9 @@ public class GameController {
 
     @FXML
     private Button btnSubmit;
+    
+    @FXML
+    private Button btnQuit;
 
     private volatile int timeLeftSeconds = 60;
     private Timer timer;
@@ -70,6 +78,7 @@ public class GameController {
         startTimer();
 
         btnSubmit.setOnAction(e -> handleSubmit());
+        btnQuit.setOnAction(e -> handleQuit());
     }
 
     public void setSessionInfo(int sessionId, boolean isHost) {
@@ -80,7 +89,7 @@ public class GameController {
     }
 
     private void startListening() {
-        new Thread(() -> {
+        listenerThread = new Thread(() -> {
             try {
                 socket.connectListener("localhost", 8888);
                 // register listening
@@ -183,9 +192,36 @@ public class GameController {
                                         + "\nĐiểm đối thủ: " + (winner == myId ? scoreP2 : scoreP1));
                                 alert.showAndWait();
 
-                                // quay về màn hình chính hoặc đóng cửa sổ
-                                Stage stage = (Stage) btnSubmit.getScene().getWindow();
-                                stage.close();
+                                // Dọn dẹp tài nguyên trước khi điều hướng
+                                isRunning = false;
+                                if (timer != null) {
+                                    timer.cancel();
+                                }
+                                
+                                // Đóng listener socket
+                                socket.disconnectListener();
+                                
+                                // Chờ listener thread kết thúc
+                                if (listenerThread != null && listenerThread.isAlive()) {
+                                    listenerThread.interrupt();
+                                    try {
+                                        listenerThread.join(1000);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                
+                                // Quay về màn hình chính
+                                try {
+                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
+                                    Parent root = loader.load();
+                                    Stage stage = (Stage) btnSubmit.getScene().getWindow();
+                                    stage.setScene(new Scene(root, 800, 520));
+                                    stage.setTitle("Trang chủ");
+                                    stage.show();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             });
                         }
 
@@ -195,7 +231,8 @@ public class GameController {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
+        listenerThread.start();
     }
 
     private void requestRoundFromServer() {
@@ -261,6 +298,30 @@ public class GameController {
                 ex.printStackTrace();
             }
         }).start();
+    }
+
+    private void handleQuit() {
+        // Xác nhận với người chơi trước khi thoát
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Xác nhận thoát");
+        confirmAlert.setHeaderText("Bạn có chắc muốn thoát trận đấu?");
+        confirmAlert.setContentText("Bạn sẽ bị tính là thua cuộc nếu thoát.");
+        confirmAlert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                // Gửi action playerQuit lên server
+                new Thread(() -> {
+                    try {
+                        JSONObject req = new JSONObject();
+                        req.put("action", "playerQuit");
+                        req.put("sessionId", sessionId);
+                        req.put("userId", SessionManager.getCurrentUser().getId());
+                        socket.send(req.toString());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }).start();
+            }
+        });
     }
 
     private int parseIntSafe(String v) {

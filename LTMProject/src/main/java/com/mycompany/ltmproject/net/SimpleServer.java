@@ -253,6 +253,8 @@ public class SimpleServer {
                     handleSubmitAnswers(line);
                 } else if (line.contains("\"action\":\"endGame\"")) {
                     handleEndGame(line);
+                } else if (line.contains("\"action\":\"playerQuit\"")) {
+                    handlePlayerQuit(line);
                 }
 
             }
@@ -396,17 +398,29 @@ public class SimpleServer {
             if (acceptorStream == null) {
                 acceptorStream = acceptorOut;
             }
-            acceptorStream.println(startGameForAcceptor.toString());
-            acceptorStream.flush();
+            if (acceptorStream != null) {
+                acceptorStream.println(startGameForAcceptor.toString());
+                acceptorStream.flush();
+                System.out.println("✅ Sent start_game to acceptor (userId=" + fromUserId + ")");
+            } else {
+                System.err.println("❌ Cannot send start_game to acceptor (userId=" + fromUserId + "): no listener or stream found");
+            }
 
             // Send to inviter (ưu tiên listener stream)
             PrintWriter inviterOut = listenerStreams.get(toUserId);
+            System.out.println("🔍 Looking for inviter (userId=" + toUserId + ") in listenerStreams: " + (inviterOut != null ? "FOUND" : "NOT FOUND"));
             if (inviterOut == null) {
                 inviterOut = onlinePlayers.get(toUserId);
+                System.out.println("🔍 Looking for inviter in onlinePlayers: " + (inviterOut != null ? "FOUND" : "NOT FOUND"));
             }
             if (inviterOut != null) {
                 inviterOut.println(startGameForInviter.toString());
                 inviterOut.flush();
+                System.out.println("✅ Sent start_game to inviter (userId=" + toUserId + ")");
+            } else {
+                System.err.println("❌ Cannot send start_game to inviter (userId=" + toUserId + "): no listener or online stream found");
+                System.err.println("   Available listenerStreams keys: " + listenerStreams.keySet());
+                System.err.println("   Available onlinePlayers keys: " + onlinePlayers.keySet());
             }
 
             System.out.println("🎮 Start game between " + fromUsername + " and " + toUsername + ", sessionId=" + sessionId);
@@ -569,21 +583,37 @@ public class SimpleServer {
                 System.err.println("⚠️ DB save GameSession failed: " + e.getMessage());
             }
 
-            JSONObject end = new JSONObject();
-            end.put("type", "game_end");
-            end.put("sessionId", sessionId);
-            end.put("scoreP1", p1);
-            end.put("scoreP2", p2);
-            end.put("winner", winner);
+            String hostUsername = onlineUsernames.getOrDefault(hostId, "");
+            String guestUsername = onlineUsernames.getOrDefault(guestId, "");
+
+            // Gửi message cho host với thông tin đối thủ là guest
+            JSONObject endForHost = new JSONObject();
+            endForHost.put("type", "game_end");
+            endForHost.put("sessionId", sessionId);
+            endForHost.put("scoreP1", p1);
+            endForHost.put("scoreP2", p2);
+            endForHost.put("winner", winner);
+            endForHost.put("opponentId", guestId);
+            endForHost.put("opponentUsername", guestUsername);
+
+            // Gửi message cho guest với thông tin đối thủ là host
+            JSONObject endForGuest = new JSONObject();
+            endForGuest.put("type", "game_end");
+            endForGuest.put("sessionId", sessionId);
+            endForGuest.put("scoreP1", p1);
+            endForGuest.put("scoreP2", p2);
+            endForGuest.put("winner", winner);
+            endForGuest.put("opponentId", hostId);
+            endForGuest.put("opponentUsername", hostUsername);
 
             PrintWriter host = listenerStreams.get(hostId);
             PrintWriter guest = listenerStreams.get(guestId);
             if (host != null) {
-                host.println(end.toString());
+                host.println(endForHost.toString());
                 host.flush();
             }
             if (guest != null) {
-                guest.println(end.toString());
+                guest.println(endForGuest.toString());
                 guest.flush();
             }
 
@@ -596,6 +626,89 @@ public class SimpleServer {
             System.err.println("⚠️ Error handleEndGame: " + e.getMessage());
         }
 
+    }
+
+    private static void handlePlayerQuit(String line) {
+        try {
+            JSONObject req = new JSONObject(line);
+            int sessionId = req.getInt("sessionId");
+            int quitterUserId = req.getInt("userId");
+
+            int hostId = sessionHostUserId.getOrDefault(sessionId, -1);
+            int guestId = sessionGuestUserId.getOrDefault(sessionId, -1);
+            
+            // Xác định người thắng (người còn lại)
+            int winner = 0;
+            int p1 = sessionScoreP1.getOrDefault(sessionId, 0);
+            int p2 = sessionScoreP2.getOrDefault(sessionId, 0);
+            
+            if (quitterUserId == hostId) {
+                // Người host thoát => guest thắng
+                winner = guestId;
+            } else if (quitterUserId == guestId) {
+                // Người guest thoát => host thắng
+                winner = hostId;
+            }
+
+            // Lưu vào database
+            try (var conn = com.mycompany.ltmproject.util.DB.get(); var ps = conn.prepareStatement(
+                    "INSERT INTO GameSession (Playerid1, Playerid2, start_time, end_time, playerscore1, playerscore2, winner) VALUES (?, ?, NOW(), NOW(), ?, ?, ?)")) {
+                ps.setInt(1, hostId);
+                ps.setInt(2, guestId);
+                ps.setInt(3, p1);
+                ps.setInt(4, p2);
+                ps.setInt(5, winner);
+                ps.executeUpdate();
+            } catch (Exception e) {
+                System.err.println("⚠️ DB save GameSession failed (player quit): " + e.getMessage());
+            }
+
+            String hostUsername = onlineUsernames.getOrDefault(hostId, "");
+            String guestUsername = onlineUsernames.getOrDefault(guestId, "");
+
+            // Gửi message cho host với thông tin đối thủ là guest
+            JSONObject endForHost = new JSONObject();
+            endForHost.put("type", "game_end");
+            endForHost.put("sessionId", sessionId);
+            endForHost.put("scoreP1", p1);
+            endForHost.put("scoreP2", p2);
+            endForHost.put("winner", winner);
+            endForHost.put("opponentId", guestId);
+            endForHost.put("opponentUsername", guestUsername);
+
+            // Gửi message cho guest với thông tin đối thủ là host
+            JSONObject endForGuest = new JSONObject();
+            endForGuest.put("type", "game_end");
+            endForGuest.put("sessionId", sessionId);
+            endForGuest.put("scoreP1", p1);
+            endForGuest.put("scoreP2", p2);
+            endForGuest.put("winner", winner);
+            endForGuest.put("opponentId", hostId);
+            endForGuest.put("opponentUsername", hostUsername);
+
+            PrintWriter host = listenerStreams.get(hostId);
+            PrintWriter guest = listenerStreams.get(guestId);
+            if (host != null) {
+                host.println(endForHost.toString());
+                host.flush();
+            }
+            if (guest != null) {
+                guest.println(endForGuest.toString());
+                guest.flush();
+            }
+
+            System.out.println("🚪 Player " + quitterUserId + " quit game session " + sessionId + ". Winner: " + winner);
+
+            // Cleanup
+            sessionScoreP1.remove(sessionId);
+            sessionScoreP2.remove(sessionId);
+            sessionHostUserId.remove(sessionId);
+            sessionGuestUserId.remove(sessionId);
+            sessionRoundCount.remove(sessionId);
+            sessionRoundSubmits.remove(sessionId);
+        } catch (Exception e) {
+            System.err.println("⚠️ Error handlePlayerQuit: " + e.getMessage());
+        }
     }
 
     // Thêm 1 Map để track client nào đang lắng nghe
