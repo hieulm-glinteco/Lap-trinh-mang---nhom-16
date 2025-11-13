@@ -2,7 +2,6 @@ package com.mycompany.ltmproject.controller;
 
 import com.mycompany.ltmproject.net.ClientSocket;
 import com.mycompany.ltmproject.session.SessionManager;
-import com.mycompany.ltmproject.util.DB;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -11,9 +10,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import org.cloudinary.json.JSONObject;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Timer;
 import java.util.TimerTask;
 import javafx.scene.control.Alert;
@@ -31,6 +27,9 @@ public class GameController {
 
     @FXML
     private Label scorePlayer1;
+
+    @FXML
+    private Label lblRound;
 
     @FXML
     private Label scorePlayer2;
@@ -75,7 +74,9 @@ public class GameController {
         // Socket setup and listener
         socket = ClientSocket.getInstance();
         startListening();
-        startTimer();
+        if (lblRound != null) {
+            lblRound.setText("Vòng 0/" + totalRounds);
+        }
 
         btnSubmit.setOnAction(e -> handleSubmit());
         btnQuit.setOnAction(e -> handleQuit());
@@ -84,8 +85,9 @@ public class GameController {
     public void setSessionInfo(int sessionId, boolean isHost) {
         this.sessionId = sessionId;
         this.isHost = isHost;
-        // When session info arrives, request first round
-        requestRoundFromServer();
+        if (isHost && roundIndex == 0) {
+            requestRoundFromServer();
+        }
     }
 
     private void startListening() {
@@ -136,6 +138,9 @@ public class GameController {
                                 btnSubmit.setDisable(false);
                                 lblTimeLeft.setText("60s");
                                 timeLeftSeconds = 60;
+                                if (lblRound != null) {
+                                    lblRound.setText("Vòng " + roundIndex + "/" + totalRounds);
+                                }
 
                                 // restart countdown timer
                                 if (timer != null) {
@@ -150,18 +155,14 @@ public class GameController {
                             }
                             int scoreP1 = msg.getInt("scoreP1");
                             int scoreP2 = msg.getInt("scoreP2");
-                            int player1Id = msg.getInt("player1Id");
-                            int player2Id = msg.getInt("player2Id");
                             Platform.runLater(() -> {
-                                int myId = SessionManager.getCurrentUser().getId();
-                                if (myId == player1Id) {
+                                if (isHost) {
                                     scorePlayer1.setText(String.valueOf(scoreP1));
                                     scorePlayer2.setText(String.valueOf(scoreP2));
-                                } else if (myId == player2Id) {
+                                } else {
                                     scorePlayer1.setText(String.valueOf(scoreP2));
                                     scorePlayer2.setText(String.valueOf(scoreP1));
                                 }
-
                             });
                         } else if ("game_end".equals(type)) {
                             int sId = msg.getInt("sessionId");
@@ -276,9 +277,23 @@ public class GameController {
     }
 
     private void evaluateAndUpdateScore() {
-        int e = parseIntSafe(txtElephant.getText());
-        int s = parseIntSafe(txtSeal.getText());
-        int f = parseIntSafe(txtFox.getText());
+        String elephantInput = txtElephant.getText() == null ? "" : txtElephant.getText().trim();
+        String sealInput = txtSeal.getText() == null ? "" : txtSeal.getText().trim();
+        String foxInput = txtFox.getText() == null ? "" : txtFox.getText().trim();
+
+        int e = parseIntSafe(elephantInput);
+        int s = parseIntSafe(sealInput);
+        int f = parseIntSafe(foxInput);
+
+        boolean hasAnswer = !elephantInput.isEmpty() || !sealInput.isEmpty() || !foxInput.isEmpty();
+        String status;
+        if (!hasAnswer) {
+            status = "no_answer";
+        } else if (e == correctElephant && s == correctSeal && f == correctFox) {
+            status = "correct";
+        } else {
+            status = "wrong";
+        }
 
         // Submit to server; server will compute and broadcast updated scores
         new Thread(() -> {
@@ -293,6 +308,8 @@ public class GameController {
                 req.put("n1", correctElephant);
                 req.put("n2", correctSeal);
                 req.put("n3", correctFox);
+                req.put("status", status);
+                req.put("roundIndex", roundIndex);
                 socket.send(req.toString());
             } catch (Exception ex) {
                 ex.printStackTrace();

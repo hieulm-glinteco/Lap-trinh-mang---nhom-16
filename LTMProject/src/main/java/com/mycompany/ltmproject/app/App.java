@@ -12,7 +12,7 @@ public class App extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Kết nối tới server trước khi mở giao diện đăng nhập
-        ClientSocket.getInstance().connect("127.0.0.1", 8888);
+        ClientSocket.getInstance().connect("26.245.35.167", 8888);
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         Parent root = loader.load();
         primaryStage.setTitle("Game");

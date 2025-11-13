@@ -244,7 +244,7 @@ public class OnlineController {
             } catch (Exception ignore) {}
 
             Stage stage = (Stage) onlineTable.getScene().getWindow();
-            stage.setScene(new Scene(root, 700, 500));
+            stage.setScene(new Scene(root, 1056, 682));
             stage.setTitle("Ván đấu với " + opponentUsername);
             stage.show();
         } catch (Exception e) {
