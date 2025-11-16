@@ -1,45 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.geometry.Insets?>
 
-<StackPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.mycompany.ltmproject.controller.OnlineController"
-           minWidth="800" prefWidth="800" maxWidth="800"
-           minHeight="520" prefHeight="520" maxHeight="520"
-           style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
-
-    <children>
-        <AnchorPane minWidth="500" prefWidth="500" maxWidth="500"
-                    minHeight="380" prefHeight="380" maxHeight="380"
-                    style="-fx-background-color: rgba(255,255,255,0.98);
-                           -fx-background-radius: 20;
-                           -fx-effect: dropshadow(gaussian, #2193b0, 12, 0.2, 0, 3);">
-
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.mycompany.ltmproject.controller.OnlineController"
+      minWidth="1000" prefWidth="1000" maxWidth="1000"
+      minHeight="650" prefHeight="650" maxHeight="650"
+      stylesheets="@../css/style.css">
+    
+    <!-- Header -->
+    <fx:include fx:id="headerPane" source="header.fxml"/>
+    
+    <!-- Nội dung chính -->
+    <StackPane VBox.vgrow="ALWAYS">
+        <!-- Ảnh nền -->
+        <ImageView fitWidth="1000" fitHeight="650" preserveRatio="false">
+            <image>
+                <Image url="@../images/background.jpeg" />
+            </image>
+        </ImageView>
+        
+        <!-- Lớp phủ -->
+        <AnchorPane style="-fx-background-color: rgba(0,0,0,0.35);">
             <children>
-                <!-- Tiêu đề -->
-                <Label text="NGƯỜI CHƠI ONLINE" layoutX="150" layoutY="20"
-                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
-
-                <!-- Trạng thái số người online -->
-                <Label fx:id="statusLabel" text="Đang tải..." layoutX="50" layoutY="50"
-                       style="-fx-font-size: 14px; -fx-text-fill: #333;"/>
-
-                <!-- Bảng danh sách -->
-                <TableView fx:id="onlineTable" layoutX="50" layoutY="70" prefWidth="400" prefHeight="220">
-                    <columns>
-                        <TableColumn fx:id="colIndex" text="STT" prefWidth="80"/>
-                        <TableColumn fx:id="colUsername" text="Username" prefWidth="180"/>
-                        <TableColumn fx:id="colInvite" text="Mời" prefWidth="140"/>
-                    </columns>
-                </TableView>
-
-                <!-- Nút trở về -->
-                <Button fx:id="backButton" text="Trở về" layoutX="190" layoutY="310" prefWidth="120" prefHeight="36"
-                        style="-fx-background-color: transparent; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;" onAction="#handleBack"
-                        />
+                <VBox alignment="CENTER" spacing="20" 
+                      AnchorPane.topAnchor="30" 
+                      AnchorPane.leftAnchor="100" 
+                      AnchorPane.rightAnchor="100" 
+                      AnchorPane.bottomAnchor="40">
+                    
+                    <!-- Tiêu đề -->
+                    <Label text="🌐 NGƯỜI CHƠI ONLINE"
+                           styleClass="label-title"
+                           style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0.3, 0, 2);"/>
+                    
+                    <!-- Trạng thái số người online -->
+                    <Label fx:id="statusLabel" text="Đang tải..."
+                           style="-fx-font-size: 18px; 
+                                  -fx-font-weight: bold; 
+                                  -fx-text-fill: #ffffff;
+                                  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 6, 0.3, 0, 2);"/>
+                    
+                    <!-- Container cho bảng -->
+                    <AnchorPane prefWidth="800" prefHeight="400"
+                                style="-fx-background-color: #ffffff;
+                                       -fx-background-radius: 20;
+                                       -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0.4, 0, 8);">
+                        <children>
+                            <!-- Bảng người chơi online -->
+                            <TableView fx:id="onlineTable" 
+                                       AnchorPane.topAnchor="20" 
+                                       AnchorPane.leftAnchor="25" 
+                                       AnchorPane.rightAnchor="25" 
+                                       AnchorPane.bottomAnchor="85"
+                                       styleClass="online-table">
+                                <columns>
+                                    <TableColumn fx:id="colIndex" text="🔢 STT" prefWidth="100"/>
+                                    <TableColumn fx:id="colUsername" text="👤 Người Chơi" prefWidth="400"/>
+                                    <TableColumn fx:id="colInvite" text="⚔️ Thao Tác" prefWidth="250"/>
+                                </columns>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                </columnResizePolicy>
+                            </TableView>
+                            
+                            <!-- Nút trở về -->
+                            <Button fx:id="backButton" text="⬅  Trở Về Trang Chủ" 
+                                    AnchorPane.bottomAnchor="20"
+                                    AnchorPane.leftAnchor="275"
+                                    AnchorPane.rightAnchor="275"
+                                    prefHeight="45"
+                                    styleClass="btn-back"
+                                    onAction="#handleBack"/>
+                        </children>
+                    </AnchorPane>
+                    
+                </VBox>
             </children>
         </AnchorPane>
-    </children>
-</StackPane>
+    </StackPane>
+</VBox>

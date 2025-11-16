@@ -5,6 +5,7 @@
 package com.mycompany.ltmproject.model;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 
 /**
  *
@@ -12,13 +13,13 @@ import java.sql.Date;
  */
 public class GameSession {
     private int id, playerid1, playerid2;
-    private Date start, end;
+    private Timestamp start, end;
     private int playerscore1, playerscore2, winner;
 
     public GameSession() {
     }
 
-    public GameSession(int id, int playerid1, int playerid2, Date start, Date end, int playerscore1, int playerscore2, int winner) {
+    public GameSession(int id, int playerid1, int playerid2, Timestamp start, Timestamp end, int playerscore1, int playerscore2, int winner) {
         this.id = id;
         this.playerid1 = playerid1;
         this.playerid2 = playerid2;
@@ -53,19 +54,19 @@ public class GameSession {
         this.playerid2 = playerid2;
     }
 
-    public Date getStart() {
+    public Timestamp getStart() {
         return start;
     }
 
-    public void setStart(Date start) {
+    public void setStart(Timestamp start) {
         this.start = start;
     }
 
-    public Date getEnd() {
+    public Timestamp getEnd() {
         return end;
     }
 
-    public void setEnd(Date end) {
+    public void setEnd(Timestamp end) {
         this.end = end;
     }
 

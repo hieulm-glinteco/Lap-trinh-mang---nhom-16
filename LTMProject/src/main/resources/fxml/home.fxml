@@ -1,52 +1,51 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.geometry.Pos?>
 
-<StackPane xmlns:fx="http://javafx.com/fxml"
-           minWidth="800" prefWidth="800" maxWidth="800"
-           minHeight="520" prefHeight="520" maxHeight="520"
-           style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);"
-           fx:controller="com.mycompany.ltmproject.controller.HomeController">
 
-    <children>
-        <AnchorPane minWidth="460" prefWidth="460" maxWidth="460"
-                    minHeight="360" prefHeight="360" maxHeight="360"
-                    style="-fx-background-color: rgba(255,255,255,0.98);
-                           -fx-background-radius: 20;
-                           -fx-effect: dropshadow(gaussian, #2193b0, 12, 0.2, 0, 3);">
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.mycompany.ltmproject.controller.HomeController"
+      minWidth="1000" prefWidth="1000" maxWidth="1000"
+      minHeight="650" prefHeight="650" maxHeight="650">
 
+    <!-- Header luôn ở trên -->
+    <fx:include fx:id="headerPane" source="header.fxml"/>
+
+    <!-- Nội dung chính -->
+    <StackPane>
+        <!-- Ảnh nền -->
+        <ImageView fitWidth="1000" fitHeight="650" preserveRatio="false">
+            <image>
+                <Image url="@../images/background.jpeg" />
+            </image>
+        </ImageView>
+
+        <!-- Lớp phủ -->
+        <AnchorPane style="-fx-background-color: rgba(0,0,0,0.3);">
             <children>
-                <!-- Tiêu đề -->
-                <Label text="TRANG CHỦ" layoutX="170" layoutY="20"
-                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
-
-                <!-- Nút chức năng -->
-                <Button text="Chơi game" layoutX="150" layoutY="80" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: linear-gradient(to right, #2193b0, #6dd5ed);
-                               -fx-background-radius: 10; -fx-font-weight: bold; -fx-text-fill: white;"/>
-
-                <Button text="Xem bảng xếp hạng" layoutX="150" layoutY="130" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: white; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #2193b0;" onAction="#handleViewRanking"/>
-
-                <Button text="Xem lịch sử đấu" layoutX="150" layoutY="180" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: white; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #2193b0;" onAction="#handleViewHistory"/>
-
-                <Button text="Xem người chơi online" layoutX="150" layoutY="230" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: white; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #2193b0;"
-                onAction="#handleViewOnlinePlayers"/>
-
-                <!-- Nút logout -->
-                <Button text="Đăng xuất" layoutX="150" layoutY="290" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: transparent; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;"
-                              onAction="#handleLogout"
-                />
+                <VBox alignment="CENTER" spacing="20"
+                      prefWidth="1000" prefHeight="650">
+                    <Label text="TRANG CHỦ"
+                           style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    <Label text="🐾 Trò chơi đếm con vật giống nhau 🐾"
+                           style="-fx-font-size: 20px; -fx-text-fill: #e0f2fe; -fx-font-style: italic;"/>
+                    <Button text="🎮 Chơi Game" prefWidth="240" prefHeight="42" styleClass="btn-primary"
+                            onAction="#handleViewOnlinePlayers"/>
+                    <Button text="🏆 Bảng Xếp Hạng" prefWidth="240" prefHeight="42" styleClass="btn-outline"
+                            onAction="#handleViewRanking"/>
+                    <Button text="📜 Lịch Sử Đấu" prefWidth="240" prefHeight="42" styleClass="btn-outline"
+                            onAction="#handleViewHistory"/>
+                    <Button text="🌐 Người Chơi Online" prefWidth="240" prefHeight="42" styleClass="btn-outline"
+                            onAction="#handleViewOnlinePlayers"/>
+                    <Button text="🚪 Đăng Xuất" prefWidth="240" prefHeight="42" styleClass="btn-logout"
+                            onAction="#handleLogout"/>
+                </VBox>
             </children>
         </AnchorPane>
-    </children>
-</StackPane>
+    </StackPane>
+</VBox>

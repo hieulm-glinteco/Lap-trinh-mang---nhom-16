@@ -16,10 +16,15 @@ import java.net.*;
 import java.io.*;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.concurrent.ThreadLocalRandom;
 import org.cloudinary.json.JSONArray;
 import org.cloudinary.json.JSONObject;
 
@@ -34,6 +39,8 @@ public class SimpleServer {
     private static Map<Integer, Integer> sessionScoreP2 = Collections.synchronizedMap(new HashMap<>());
     private static Map<Integer, Integer> sessionHostUserId = Collections.synchronizedMap(new HashMap<>());
     private static Map<Integer, Integer> sessionGuestUserId = Collections.synchronizedMap(new HashMap<>());
+    private static Map<Integer, List<Integer>> sessionImageIdSets = Collections.synchronizedMap(new HashMap<>());
+    private static Map<Integer, SessionRoundState> sessionRoundStates = Collections.synchronizedMap(new HashMap<>());
 
     public static void main(String[] args) throws IOException {
         ServerSocket ss = new ServerSocket(8888);
@@ -170,7 +177,9 @@ public class SimpleServer {
                     UserDAO userDAO = new UserDAO();
 
                     List<GameSession> sessions = gameSessionDAO.getGameSessionById(userId);
+                    // ✅ Định dạng với múi giờ Việt Nam
                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                    dateFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
 
                     JSONArray historyArray = new JSONArray();
 
@@ -423,6 +432,10 @@ public class SimpleServer {
                 System.err.println("   Available onlinePlayers keys: " + onlinePlayers.keySet());
             }
 
+            sessionImageIdSets.put(sessionId, prepareRoundImageIds());
+            sessionRoundStates.put(sessionId, new SessionRoundState());
+            sessionRoundCount.put(sessionId, 0);
+
             System.out.println("🎮 Start game between " + fromUsername + " and " + toUsername + ", sessionId=" + sessionId);
         } catch (Exception e) {
             System.err.println("⚠️ Error handling acceptInvite: " + e.getMessage());
@@ -446,19 +459,43 @@ public class SimpleServer {
                 return;
             }
 
-            // Lấy ảnh ngẫu nhiên từ DB
+            List<Integer> imageIds = sessionImageIdSets.get(sessionId);
+            if (imageIds == null || imageIds.size() < 5) {
+                imageIds = prepareRoundImageIds();
+                sessionImageIdSets.put(sessionId, imageIds);
+            }
+
+            int imageIndex = Math.min(current - 1, imageIds.size() - 1);
+            int imageId = imageIds.get(imageIndex);
+
             String imageUrl = null;
             int n1 = 0, n2 = 0, n3 = 0;
-            try (var conn = com.mycompany.ltmproject.util.DB.get(); var ps = conn.prepareStatement("SELECT number1, number2, number3, filepath FROM Images ORDER BY RAND() LIMIT 1"); var rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    n1 = rs.getInt("number1");
-                    n2 = rs.getInt("number2");
-                    n3 = rs.getInt("number3");
-                    imageUrl = rs.getString("filepath");
+            try (var conn = com.mycompany.ltmproject.util.DB.get(); var ps = conn.prepareStatement("SELECT number1, number2, number3, filepath FROM Images WHERE id = ?")) {
+                ps.setInt(1, imageId);
+                try (var rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        n1 = rs.getInt("number1");
+                        n2 = rs.getInt("number2");
+                        n3 = rs.getInt("number3");
+                        imageUrl = rs.getString("filepath");
+                        System.out.println("ANSWER: " + n1 + " " + n2 + " " + n3);
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("⚠️ DB error requestRound: " + e.getMessage());
             }
+
+            SessionRoundState state = sessionRoundStates.computeIfAbsent(sessionId, id -> new SessionRoundState());
+            state.lastRoundNumber = state.currentRoundNumber;
+            state.lastRoundStartNano = state.currentRoundStartNano;
+            state.lastFirstCorrectTimeMs = state.firstCorrectTimeMs;
+            state.currentRoundNumber = current;
+            state.currentRoundResolved = false;
+            state.firstCorrectUserId = null;
+            state.firstCorrectTimeMs = null;
+            state.submissionsThisRound = 0;
+            state.nextRoundTriggered = false;
+            state.currentRoundStartNano = System.nanoTime();
 
             JSONObject round = new JSONObject();
             round.put("type", "round_data");
@@ -467,8 +504,7 @@ public class SimpleServer {
             round.put("n1", n1);
             round.put("n2", n2);
             round.put("n3", n3);
-            
-            System.out.println(n1 + " " + n2 + " " + n3);
+
             // gửi cho cả 2 người chơi
             PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
             PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
@@ -486,9 +522,6 @@ public class SimpleServer {
         }
     }
 
-    // track number of submitted players per round
-    private static Map<Integer, Integer> sessionRoundSubmits = Collections.synchronizedMap(new HashMap<>());
-
     private static void handleSubmitAnswers(String line) {
         try {
             JSONObject req = new JSONObject(line);
@@ -500,21 +533,53 @@ public class SimpleServer {
             int n1 = req.getInt("n1");
             int n2 = req.getInt("n2");
             int n3 = req.getInt("n3");
-            
-            System.out.println(n1 + " " + n2 + " " + n3);
+            int roundIndex = req.optInt("roundIndex", sessionRoundCount.getOrDefault(sessionId, 0));
+            String status = req.optString("status", "");
+
+            boolean reportedNoAnswer = "no_answer".equalsIgnoreCase(status);
+            boolean isCorrect = (e == n1 && s == n2 && f == n3);
+            if (isCorrect) {
+                status = "correct";
+            } else if (reportedNoAnswer) {
+                status = "no_answer";
+            } else {
+                status = "wrong";
+            }
+
+            SessionRoundState state = sessionRoundStates.computeIfAbsent(sessionId, id -> new SessionRoundState());
+            boolean isCurrentRound = roundIndex == state.currentRoundNumber;
+            boolean isPreviousRound = roundIndex == state.lastRoundNumber && roundIndex != state.currentRoundNumber;
+
+            if (!isCurrentRound && !isPreviousRound) {
+                System.out.println("⚠️ Ignore submission: round mismatch sessionId=" + sessionId + ", reported=" + roundIndex + ", current=" + state.currentRoundNumber);
+                return;
+            }
+
+            long baseNano = isCurrentRound ? state.currentRoundStartNano : state.lastRoundStartNano;
+            long elapsedMs = baseNano > 0 ? (System.nanoTime() - baseNano) / 1_000_000L : 0;
+
             int points = 0;
-            if (e == n1 && s == n2 && f == n3) {
-                points += 5;
+            if (isCorrect) {
+                points = 10;
+            } else if (reportedNoAnswer) {
+                points = -5;
             }
 
             Integer hostId = sessionHostUserId.get(sessionId);
             if (hostId != null && hostId == userId) {
-                sessionScoreP1.put(sessionId, sessionScoreP1.getOrDefault(sessionId, 0) + points);
+                int newScore = sessionScoreP1.getOrDefault(sessionId, 0) + points;
+                if (newScore < 0) {
+                    newScore = 0;
+                }
+                sessionScoreP1.put(sessionId, newScore);
             } else {
-                sessionScoreP2.put(sessionId, sessionScoreP2.getOrDefault(sessionId, 0) + points);
+                int newScore = sessionScoreP2.getOrDefault(sessionId, 0) + points;
+                if (newScore < 0) {
+                    newScore = 0;
+                }
+                sessionScoreP2.put(sessionId, newScore);
             }
 
-            // send updated score to both players
             JSONObject update = new JSONObject();
             update.put("type", "score_update");
             update.put("sessionId", sessionId);
@@ -524,6 +589,10 @@ public class SimpleServer {
             Integer player2Id = sessionGuestUserId.get(sessionId);
             update.put("player1Id", player1Id);
             update.put("player2Id", player2Id);
+            update.put("roundIndex", roundIndex);
+            update.put("status", status);
+            update.put("userId", userId);
+            update.put("elapsedMs", elapsedMs);
 
             PrintWriter host = listenerStreams.get(sessionHostUserId.get(sessionId));
             PrintWriter guest = listenerStreams.get(sessionGuestUserId.get(sessionId));
@@ -536,17 +605,36 @@ public class SimpleServer {
                 guest.flush();
             }
 
-            // ✅ increase submit count
-            int count = sessionRoundSubmits.getOrDefault(sessionId, 0) + 1;
-            sessionRoundSubmits.put(sessionId, count);
+            if (isCurrentRound) {
+                state.submissionsThisRound++;
+            }
 
-            // ✅ if both players submitted => trigger next round
-            if (count >= 2) {
-                sessionRoundSubmits.put(sessionId, 0); // reset for next round
+            boolean shouldAdvance = false;
 
-                JSONObject nextReq = new JSONObject();
-                nextReq.put("sessionId", sessionId);
-                handleRequestRound(nextReq.toString(), null); // next round or end game
+            if ("correct".equalsIgnoreCase(status)) {
+                if (isCurrentRound) {
+                    if (state.firstCorrectUserId == null) {
+                        state.firstCorrectUserId = userId;
+                        state.firstCorrectTimeMs = elapsedMs;
+                        state.currentRoundResolved = true;
+                        shouldAdvance = true;
+                    } else if (state.firstCorrectTimeMs != null && elapsedMs == state.firstCorrectTimeMs && state.firstCorrectUserId != userId) {
+                        // tie detected
+                    }
+                } else if (isPreviousRound) {
+                    if (state.lastFirstCorrectTimeMs != null && elapsedMs == state.lastFirstCorrectTimeMs) {
+                        // tie on previously resolved round
+                    }
+                }
+            }
+
+            if (!state.currentRoundResolved && isCurrentRound && state.submissionsThisRound >= 2) {
+                state.currentRoundResolved = true;
+                shouldAdvance = true;
+            }
+
+            if (shouldAdvance) {
+                advanceToNextRound(sessionId);
             }
 
         } catch (Exception e) {
@@ -581,6 +669,32 @@ public class SimpleServer {
                 ps.executeUpdate();
             } catch (Exception e) {
                 System.err.println("⚠️ DB save GameSession failed: " + e.getMessage());
+            }
+
+            // Update totalRankScore
+            try (var conn = com.mycompany.ltmproject.util.DB.get()) {
+                if (winner == 0) {
+                    // Hòa: cả 2 người chơi đều +1 điểm
+                    try (var ps = conn.prepareStatement(
+                            "UPDATE player SET totalRankScore = totalRankScore + 1 WHERE id = ?")) {
+                        ps.setInt(1, hostId);
+                        ps.executeUpdate();
+                    }
+                    try (var ps = conn.prepareStatement(
+                            "UPDATE player SET totalRankScore = totalRankScore + 1 WHERE id = ?")) {
+                        ps.setInt(1, guestId);
+                        ps.executeUpdate();
+                    }
+                } else {
+                    // Có người thắng: người thắng +3 điểm
+                    try (var ps = conn.prepareStatement(
+                            "UPDATE player SET totalRankScore = totalRankScore + 3 WHERE id = ?")) {
+                        ps.setInt(1, winner);
+                        ps.executeUpdate();
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ DB update totalRankScore failed: " + e.getMessage());
             }
 
             String hostUsername = onlineUsernames.getOrDefault(hostId, "");
@@ -622,6 +736,9 @@ public class SimpleServer {
             sessionScoreP2.remove(sessionId);
             sessionHostUserId.remove(sessionId);
             sessionGuestUserId.remove(sessionId);
+            sessionRoundCount.remove(sessionId);
+            sessionImageIdSets.remove(sessionId);
+            sessionRoundStates.remove(sessionId);
         } catch (Exception e) {
             System.err.println("⚠️ Error handleEndGame: " + e.getMessage());
         }
@@ -636,12 +753,12 @@ public class SimpleServer {
 
             int hostId = sessionHostUserId.getOrDefault(sessionId, -1);
             int guestId = sessionGuestUserId.getOrDefault(sessionId, -1);
-            
+
             // Xác định người thắng (người còn lại)
             int winner = 0;
             int p1 = sessionScoreP1.getOrDefault(sessionId, 0);
             int p2 = sessionScoreP2.getOrDefault(sessionId, 0);
-            
+
             if (quitterUserId == hostId) {
                 // Người host thoát => guest thắng
                 winner = guestId;
@@ -661,6 +778,20 @@ public class SimpleServer {
                 ps.executeUpdate();
             } catch (Exception e) {
                 System.err.println("⚠️ DB save GameSession failed (player quit): " + e.getMessage());
+            }
+
+            // Update totalRankScore
+            try (var conn = com.mycompany.ltmproject.util.DB.get()) {
+
+                // Có người thắng: người thắng +3 điểm
+                try (var ps = conn.prepareStatement(
+                        "UPDATE player SET totalRankScore = totalRankScore + 3 WHERE id = ?")) {
+                    ps.setInt(1, winner);
+                    ps.executeUpdate();
+                }
+
+            } catch (Exception e) {
+                System.err.println("⚠️ DB update totalRankScore failed: " + e.getMessage());
             }
 
             String hostUsername = onlineUsernames.getOrDefault(hostId, "");
@@ -705,7 +836,8 @@ public class SimpleServer {
             sessionHostUserId.remove(sessionId);
             sessionGuestUserId.remove(sessionId);
             sessionRoundCount.remove(sessionId);
-            sessionRoundSubmits.remove(sessionId);
+            sessionImageIdSets.remove(sessionId);
+            sessionRoundStates.remove(sessionId);
         } catch (Exception e) {
             System.err.println("⚠️ Error handlePlayerQuit: " + e.getMessage());
         }
@@ -742,5 +874,40 @@ public class SimpleServer {
             entry.getValue().println(notification.toString());
             entry.getValue().flush();
         }
+    }
+
+    private static void advanceToNextRound(int sessionId) {
+        SessionRoundState state = sessionRoundStates.get(sessionId);
+        if (state != null && !state.nextRoundTriggered) {
+            state.nextRoundTriggered = true;
+            JSONObject nextReq = new JSONObject();
+            nextReq.put("sessionId", sessionId);
+            handleRequestRound(nextReq.toString(), null);
+        }
+    }
+
+    private static class SessionRoundState {
+
+        int currentRoundNumber;
+        long currentRoundStartNano;
+        boolean currentRoundResolved;
+        Integer firstCorrectUserId;
+        Long firstCorrectTimeMs;
+        int submissionsThisRound;
+        boolean nextRoundTriggered;
+
+        int lastRoundNumber;
+        long lastRoundStartNano;
+        Long lastFirstCorrectTimeMs;
+    }
+
+    private static List<Integer> prepareRoundImageIds() {
+        Set<Integer> uniqueIds = new HashSet<>();
+        while (uniqueIds.size() < 5) {
+            uniqueIds.add(ThreadLocalRandom.current().nextInt(1, 11));
+        }
+        List<Integer> imageIds = new ArrayList<>(uniqueIds);
+        Collections.shuffle(imageIds);
+        return imageIds;
     }
 }

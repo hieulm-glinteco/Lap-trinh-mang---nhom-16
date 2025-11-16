@@ -172,10 +172,14 @@ public class HistoryController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
             Parent root = loader.load();
 
+            Scene scene = new Scene(root, 1000, 650);
+            scene.getStylesheets().add(getClass().getResource("/css/home.css").toExternalForm());
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root, 800, 520));
+            stage.setScene(scene);
             stage.setTitle("Trang chủ");
+            stage.setResizable(false);
             stage.show();
+            
         } catch (IOException e) {
             e.printStackTrace();
         }

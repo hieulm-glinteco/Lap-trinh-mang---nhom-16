@@ -119,7 +119,7 @@ public class LoginController {
                         // ✅ Mở Home.fxml và truyền user vào controller
                         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
                         Parent root = loader.load();
-
+                        
                         HomeController homeController = loader.getController();
                         if (homeController == null) {
                             System.err.println("⚠️ Không thể lấy controller từ home.fxml!");
@@ -130,7 +130,8 @@ public class LoginController {
                         SessionManager.setCurrentUser(user);
                         System.out.println("Đăng nhập thành công, user ID = " + user.getId());
 
-                        Scene scene = new Scene(root, 800, 520);
+                        Scene scene = new Scene(root, 1000, 650);
+                        scene.getStylesheets().add(getClass().getResource("/css/home.css").toExternalForm());
                         Stage stage = (Stage) loginButton.getScene().getWindow();
                         stage.setScene(scene);
                         stage.setTitle("Trang chủ");
@@ -164,7 +165,7 @@ public class LoginController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/register.fxml"));
             Parent root = loader.load();
-            Scene scene = new Scene(root, 800, 560);
+            Scene scene = new Scene(root, 1000, 700);
 
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             stage.setScene(scene);

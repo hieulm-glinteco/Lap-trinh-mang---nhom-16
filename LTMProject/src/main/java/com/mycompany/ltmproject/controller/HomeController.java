@@ -4,14 +4,15 @@ import com.mycompany.ltmproject.model.User;
 import com.mycompany.ltmproject.session.SessionManager;
 import java.io.IOException;
 import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 public class HomeController {
-
     // Không cần currentUser hay currentUserId nữa, vì dùng SessionManager
 
     public void handleLogout(ActionEvent e) {
@@ -20,7 +21,7 @@ public class HomeController {
             SessionManager.clearSession();
 
             Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
-            Scene scene = new Scene(root, 800, 520);
+            Scene scene = new Scene(root, 1000, 650);
             Stage stage = (Stage) ((Node) e.getSource()).getScene().getWindow();
             stage.setScene(scene);
             stage.setTitle("Đăng nhập");
@@ -38,7 +39,7 @@ public class HomeController {
 
             // ✅ Không cần truyền user nữa
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root, 800, 520));
+            stage.setScene(new Scene(root, 1000, 650));
             stage.setTitle("Bảng xếp hạng");
             stage.show();
         } catch (IOException e) {
@@ -53,7 +54,7 @@ public class HomeController {
 
             // ✅ Không cần gọi setCurrentUser vì HistoryController tự lấy từ SessionManager
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root, 800, 520));
+            stage.setScene(new Scene(root, 1000, 650));
             stage.setTitle("Lịch sử đấu");
             stage.show();
         } catch (IOException e) {
@@ -66,7 +67,7 @@ public class HomeController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/online.fxml"));
         Parent root = loader.load();
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setScene(new Scene(root, 800, 520));
+        stage.setScene(new Scene(root, 1000, 650));
         stage.setTitle("Người chơi online");
         stage.show();
     } catch (IOException e) {

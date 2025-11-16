@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.mycompany.ltmproject.controller.HeaderController"
+      spacing="20"
+      alignment="CENTER_LEFT"
+      style="-fx-background-color: rgba(255,255,255,0.85);
+             -fx-padding: 12px 24px;
+             -fx-border-color: #d1d5db;
+             -fx-border-width: 0 0 1px 0;
+             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);">
+
+    <children>
+        <Label fx:id="lblUsername"
+               text="Xin chào, User!" style="-fx-font-size: 16px;
+                      -fx-font-weight: bold;
+                      -fx-text-fill: #1f2937;"/>
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <HBox spacing="15" alignment="CENTER_RIGHT">
+            <children>
+                <Button text="🏠 Trang chủ" onAction="#handleHome"
+                        style="-fx-font-size: 14px;
+                               -fx-font-weight: bold;
+                               -fx-background-color: #3b82f6;
+                               -fx-text-fill: white;
+                               -fx-background-radius: 6;
+                               -fx-padding: 6 12;
+                               -fx-cursor: hand;"/>
+                <Button text="🚪 Đăng xuất" onAction="#handleLogout"
+                        style="-fx-font-size: 14px;
+                               -fx-font-weight: bold;
+                               -fx-background-color: transparent;
+                               -fx-text-fill: #ef4444;
+                               -fx-background-radius: 6;
+                               -fx-padding: 6 12;
+                               -fx-border-color: #ef4444;
+                               -fx-border-width: 1;
+                               -fx-cursor: hand;"/>
+            </children>
+        </HBox>
+    </children>
+</HBox>

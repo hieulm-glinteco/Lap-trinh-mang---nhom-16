@@ -1,0 +1,100 @@
+/* Override text-field cho trang login/register */
+.text-field {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 10 12;
+    -fx-font-size: 14px;
+    -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
+    -fx-text-fill: #1f2937;
+}
+
+.text-field:focused {
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.15), 8, 0.3, 0, 0);
+}
+
+/* Override password-field */
+.password-field {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-padding: 10 12;
+    -fx-font-size: 14px;
+    -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
+    -fx-text-fill: #1f2937;
+}
+
+.password-field:focused {
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.15), 8, 0.3, 0, 0);
+}
+
+/* Label title */
+.label-title {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* Label subtitle */
+.label-subtitle {
+    -fx-font-size: 16px;
+    -fx-text-fill: white;
+    -fx-font-style: italic;
+}
+
+/* Nút primary cho login */
+.btn-primary {
+    -fx-background-color: #3b82f6;
+    -fx-background-radius: 10;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.3), 8, 0.3, 0, 3);
+}
+
+.btn-primary:hover {
+    -fx-background-color: #2563eb;
+    -fx-scale-y: 1.02;
+    -fx-scale-x: 1.02;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #1d4ed8;
+    -fx-translate-y: 1;
+}
+
+/* Nút outline cho login/register */
+.btn-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: #3b82f6;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 4, 0.2, 0, 2);
+}
+
+.btn-outline:hover {
+    -fx-background-color: rgba(59,130,246,0.08);
+    -fx-scale-y: 1.02;
+    -fx-scale-x: 1.02;
+}
+
+.btn-outline:pressed {
+    -fx-background-color: rgba(59,130,246,0.15);
+    -fx-translate-y: 1;
+}

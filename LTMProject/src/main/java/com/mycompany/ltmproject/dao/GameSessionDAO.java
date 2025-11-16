@@ -39,8 +39,8 @@ public class GameSessionDAO {
                     gs.setId(rs.getInt("id"));
                     gs.setPlayerid1(rs.getInt("Playerid1"));
                     gs.setPlayerid2(rs.getInt("Playerid2"));
-                    gs.setStart(rs.getDate("start_time"));
-                    gs.setEnd(rs.getDate("end_time"));
+                    gs.setStart(rs.getTimestamp("start_time"));
+                    gs.setEnd(rs.getTimestamp("end_time"));
                     gs.setPlayerscore1(rs.getInt("playerscore1"));
                     gs.setPlayerscore2(rs.getInt("playerscore2"));
                     gs.setWinner(rs.getInt("winner")); // vì winner là INT

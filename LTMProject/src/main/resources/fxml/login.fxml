@@ -1,42 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.mycompany.ltmproject.controller.LoginController"
-            prefWidth="800" prefHeight="520"
-            style="-fx-background-color: linear-gradient(to bottom right, #2193b0, #6dd5ed);">
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.mycompany.ltmproject.controller.LoginController"
+           minWidth="1000" prefWidth="1000" maxWidth="1000"
+           minHeight="650" prefHeight="650" maxHeight="650"
+           stylesheets="@../css/login.css">
 
     <children>
-        <!-- FORM: phóng to và đặt giữa (layoutX/Y tính tay) -->
-        <AnchorPane layoutX="190" layoutY="130" prefWidth="420" prefHeight="260"
-                    style="-fx-background-color: rgba(255,255,255,0.98);
-                           -fx-background-radius: 20;
-                           -fx-effect: dropshadow(gaussian, #2193b0, 12, 0.2, 0, 3);">
-            <children>
-                <Label text="ĐĂNG NHẬP" layoutX="150" layoutY="18"
-                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2193b0;"/>
+        <!-- Ảnh nền -->
+        <ImageView fitWidth="1000" fitHeight="650" preserveRatio="false">
+            <image>
+                <Image url="@../images/background.jpeg" />
+            </image>
+        </ImageView>
 
-                <TextField fx:id="usernameField" layoutX="40" layoutY="70" prefWidth="340" promptText="Tên đăng nhập"
-                           style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
-                <PasswordField fx:id="passwordField" layoutX="40" layoutY="115" prefWidth="340" promptText="Mật khẩu"
-                               style="-fx-font-size: 14px; -fx-background-radius: 10; -fx-border-radius: 10;"/>
+        <!-- Lớp phủ và nội dung -->
+        <VBox alignment="CENTER" spacing="20"
+              style="-fx-background-color: rgba(0,0,0,0.35);"
+              prefWidth="1000" prefHeight="650">
 
-                <Button fx:id="loginButton"  text="Đăng nhập" layoutX="40" layoutY="165" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: linear-gradient(to right, #2193b0, #6dd5ed);
-                               -fx-background-radius: 10; -fx-font-weight: bold; -fx-text-fill: white;"
-                        onAction="#handleLogin"/>
-                <Button text="Đăng ký" layoutX="220" layoutY="165" prefWidth="160" prefHeight="36"
-                        style="-fx-background-color: transparent; -fx-border-color: #2193b0;
-                               -fx-border-radius: 10; -fx-text-fill: #2193b0; -fx-font-weight: bold;"
-                        onAction="#handleRegister"/>
+            <!-- Tiêu đề -->
+            <Label text="🎮 GAME ĐẾM SỐ ĐỒ VẬT"
+                   styleClass="label-title"
+                   style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0.3, 0, 2);
+                          -fx-font-family: 'Segoe UI', 'Arial', sans-serif;"/>
 
-                <Label fx:id="statusLabel" layoutX="40" layoutY="215" prefWidth="340"
-                       style="-fx-text-fill: red; -fx-font-size: 13px;"/>
-            </children>
-        </AnchorPane>
+            <Label text="Chào mừng bạn đến với trò chơi!"
+                   styleClass="label-subtitle"
+                   style="-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 6, 0.3, 0, 2);
+                          -fx-font-family: 'Segoe UI', 'Arial', sans-serif;"/>
 
-        <Label text="© 2025 Game Đếm số đồ vật" layoutX="315" layoutY="488"
-               style="-fx-text-fill: white; -fx-font-size: 12px;"/>
+            <!-- Khung đăng nhập -->
+            <VBox alignment="CENTER" spacing="10"
+                  maxWidth="500" maxHeight="450"
+                  style="-fx-background-color: #ffffff;
+                         -fx-background-radius: 15;
+                         -fx-padding: 20;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 15, 0.3, 0, 5);">
+
+                <Label text="🔐 ĐĂNG NHẬP"
+                       style="-fx-font-size: 18px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #3b82f6;
+                              -fx-font-family: 'Segoe UI', 'Arial', sans-serif;"/>
+
+                <TextField fx:id="usernameField"
+                           promptText="Tên đăng nhập"
+                           maxWidth="440" prefHeight="50"
+                           styleClass="text-field"/>
+
+                <PasswordField fx:id="passwordField"
+                               promptText="Mật khẩu"
+                               maxWidth="440" prefHeight="50"
+                               styleClass="password-field"/>
+
+                <Label fx:id="statusLabel"
+                       maxWidth="240"
+                       style="-fx-text-fill: #ef4444;
+                              -fx-font-size: 11px;
+                              -fx-font-weight: 600;
+                              -fx-font-family: 'Segoe UI', 'Arial', sans-serif;"/>
+
+                <VBox spacing="6" alignment="CENTER" maxWidth="240">
+                    <Button fx:id="loginButton"
+                            text="Đăng Nhập"
+                            maxWidth="240" prefHeight="32"
+                            styleClass="btn-primary"
+                            onAction="#handleLogin"/>
+
+                    <Button text="Đăng Ký Tài Khoản"
+                            maxWidth="240" prefHeight="32"
+                            styleClass="btn-outline"
+                            style="-fx-text-fill: #3b82f6; -fx-border-color: #3b82f6;"
+                            onAction="#handleRegister"/>
+                </VBox>
+            </VBox>
+
+            <!-- Footer -->
+            <Label text="© 2025 Game Đếm Số Đồ Vật - Phát triển bởi Nhóm 16"
+                   style="-fx-text-fill: white;
+                          -fx-font-size: 12px;
+                          -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
+                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0.3, 0, 1);"/>
+        </VBox>
     </children>
-</AnchorPane>
+</StackPane>

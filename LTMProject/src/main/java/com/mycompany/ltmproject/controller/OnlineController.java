@@ -244,7 +244,7 @@ public class OnlineController {
             } catch (Exception ignore) {}
 
             Stage stage = (Stage) onlineTable.getScene().getWindow();
-            stage.setScene(new Scene(root, 700, 500));
+            stage.setScene(new Scene(root, 1056, 682));
             stage.setTitle("Ván đấu với " + opponentUsername);
             stage.show();
         } catch (Exception e) {
@@ -325,8 +325,10 @@ public class OnlineController {
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/home.fxml"));
             Parent root = loader.load();
+            Scene scene = new Scene(root, 1000, 650);
+            scene.getStylesheets().add(getClass().getResource("/css/home.css").toExternalForm());
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root, 800, 520));
+            stage.setScene(scene);
             stage.setTitle("Trang chủ");
             stage.show();
         } catch (Exception e) {
