@@ -157,7 +157,7 @@ public class HistoryController {
             // ⭐ Khôi phục listener
             if (wasListening) {
                 try {
-                    clientSocket.connectListener("26.57.20.233", 8888);
+                    clientSocket.connectListener("localhost", 8888);
                     Thread.sleep(100);
                 } catch (IOException e) {
                     System.err.println("Failed to reconnect listener: " + e.getMessage());

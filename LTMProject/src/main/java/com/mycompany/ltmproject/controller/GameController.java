@@ -102,7 +102,7 @@ public class GameController {
     private void startListening() {
         listenerThread = new Thread(() -> {
             try {
-                socket.connectListener("26.57.20.233", 8888);
+                socket.connectListener("localhost", 8888);
                 // register listening
                 try {
                     JSONObject start = new JSONObject();

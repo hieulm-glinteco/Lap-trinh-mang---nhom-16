@@ -119,7 +119,7 @@ public class OnlineController {
         listenerThread = new Thread(() -> {
             try {
                 // Tạo kết nối listener riêng
-                clientSocket.connectListener("26.57.20.233", 8888);
+                clientSocket.connectListener("localhost", 8888);
                 // Thông báo cho server biết user này bắt đầu lắng nghe
                 try {
                     JSONObject startListening = new JSONObject();
