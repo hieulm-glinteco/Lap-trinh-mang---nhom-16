@@ -119,7 +119,7 @@ public class OnlineController {
         listenerThread = new Thread(() -> {
             try {
                 // Tạo kết nối listener riêng
-                clientSocket.connectListener("localhost", 8888);
+                clientSocket.connectListener("26.57.20.233", 8888);
                 // Thông báo cho server biết user này bắt đầu lắng nghe
                 try {
                     JSONObject startListening = new JSONObject();
@@ -162,7 +162,10 @@ public class OnlineController {
                             Platform.runLater(() -> {
                                 // Đóng thông báo "đã gửi lời mời" nếu còn hiển thị
                                 if (inviteSentAlert != null) {
-                                    try { inviteSentAlert.close(); } catch (Exception ignore) {}
+                                    try {
+                                        inviteSentAlert.close();
+                                    } catch (Exception ignore) {
+                                    }
                                     inviteSentAlert = null;
                                 }
                                 startGame(opponentUsername, sessionId, isHost);
@@ -234,14 +237,29 @@ public class OnlineController {
             isRunning = false;
             clientSocket.disconnectListener();
 
+            // Đợi một chút để listener cũ đóng hoàn toàn
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/gameInterface.fxml"));
             Parent root = loader.load();
+
             // Truyền tham số cho controller
             try {
                 GameController gc = loader.getController();
+                // Đợi một chút để listener mới được khởi tạo và đăng ký với server
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 // Giả sử GameController có setter (chúng ta sẽ thêm setter dưới đây)
                 gcSetSession(gc, sessionId, isHost);
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
 
             Stage stage = (Stage) onlineTable.getScene().getWindow();
             stage.setScene(new Scene(root, 1056, 682));
@@ -258,7 +276,8 @@ public class OnlineController {
         try {
             controller.getClass().getMethod("setSessionInfo", int.class, boolean.class)
                     .invoke(controller, sessionId, isHost);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private void handleInvite(int playerId, String username, Button btn) {

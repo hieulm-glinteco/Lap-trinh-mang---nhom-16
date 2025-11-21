@@ -1,0 +1,156 @@
+/* ==================== BACKGROUND ==================== */
+.root-pane {
+    -fx-background-color: linear-gradient(to bottom right, #e3f2fd, #f0f4f8);
+}
+
+/* ==================== MAIN CONTAINER ==================== */
+.main-container {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-color: #3399ff;
+    -fx-border-width: 3;
+    -fx-border-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(51,153,255,0.35), 15, 0.4, 0, 5);
+}
+
+/* ==================== TITLE ==================== */
+.game-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2f80ed;
+    -fx-effect: dropshadow(gaussian, rgba(47,128,237,0.25), 5, 0.3, 0, 2);
+}
+
+/* ==================== INFO CARDS ==================== */
+.info-card {
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 10;
+    -fx-padding: 8 15;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0.2, 0, 2);
+}
+
+.label-info {
+    -fx-font-size: 14px;
+    -fx-text-fill: #495057;
+    -fx-font-weight: 600;
+}
+
+.value-time {
+    -fx-font-size: 16px;
+    -fx-text-fill: #dc3545;
+    -fx-font-weight: bold;
+}
+
+.value-player1 {
+    -fx-font-size: 16px;
+    -fx-text-fill: #28a745;
+    -fx-font-weight: bold;
+}
+
+.value-player2 {
+    -fx-font-size: 16px;
+    -fx-text-fill: #fd7e14;
+    -fx-font-weight: bold;
+}
+
+/* ==================== ROUND BADGE ==================== */
+.round-badge {
+    -fx-background-color: linear-gradient(to right, #2f80ed, #56ccf2);
+    -fx-background-radius: 20;
+    -fx-padding: 8 20;
+    -fx-effect: dropshadow(gaussian, rgba(47,128,237,0.4), 8, 0.3, 0, 3);
+}
+
+.label-round {
+    -fx-font-size: 14px;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+}
+
+.value-round {
+    -fx-font-size: 16px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* ==================== IMAGE FRAME ==================== */
+.image-frame {
+    -fx-background-color: white;
+    -fx-background-radius: 15;
+    -fx-border-color: #2f80ed;
+    -fx-border-width: 3;
+    -fx-border-radius: 15;
+    -fx-padding: 10;
+    -fx-effect: dropshadow(gaussian, rgba(47,128,237,0.25), 12, 0.3, 0, 4);
+}
+
+/* ==================== INPUT FIELDS ==================== */
+.input-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #2f80ed;
+    -fx-font-weight: bold;
+}
+
+.input-field {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: #d1e7fd;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-padding: 8 12;
+    -fx-font-size: 14px;
+    -fx-text-fill: #333;
+}
+
+.input-field:focused {
+    -fx-border-color: #2f80ed;
+    -fx-border-width: 2.5;
+    -fx-effect: dropshadow(gaussian, rgba(47,128,237,0.2), 8, 0.3, 0, 0);
+}
+
+.input-field:hover {
+    -fx-border-color: #56ccf2;
+}
+
+/* ==================== BUTTONS ==================== */
+.btn-submit {
+    -fx-background-color: linear-gradient(to right, #28a745, #20c997);
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 15;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(40,167,69,0.4), 10, 0.3, 0, 4);
+}
+
+.btn-submit:hover {
+    -fx-background-color: linear-gradient(to right, #20c997, #17a589);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.btn-submit:pressed {
+    -fx-background-color: linear-gradient(to right, #1e7e34, #28a745);
+    -fx-translate-y: 2;
+}
+
+.btn-quit {
+    -fx-background-color: linear-gradient(to right, #dc3545, #c82333);
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 12;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(220,53,69,0.35), 8, 0.3, 0, 3);
+}
+
+.btn-quit:hover {
+    -fx-background-color: linear-gradient(to right, #c82333, #bd2130);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.btn-quit:pressed {
+    -fx-background-color: linear-gradient(to right, #bd2130, #a71d2a);
+    -fx-translate-y: 2;
+}

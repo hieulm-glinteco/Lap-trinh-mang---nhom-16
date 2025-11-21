@@ -85,21 +85,32 @@ public class GameController {
     public void setSessionInfo(int sessionId, boolean isHost) {
         this.sessionId = sessionId;
         this.isHost = isHost;
-        if (isHost && roundIndex == 0) {
-            requestRoundFromServer();
-        }
+        // Đợi listener được đăng ký với server trước khi request round
+        new Thread(() -> {
+            try {
+                // Đợi thêm một chút để đảm bảo listener đã sẵn sàng
+                Thread.sleep(300);
+                if (isHost && roundIndex == 0) {
+                    requestRoundFromServer();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     private void startListening() {
         listenerThread = new Thread(() -> {
             try {
-                socket.connectListener("localhost", 8888);
+                socket.connectListener("26.57.20.233", 8888);
                 // register listening
                 try {
                     JSONObject start = new JSONObject();
                     start.put("action", "startListening");
                     start.put("userId", SessionManager.getCurrentUser().getId());
                     socket.sendOnListener(start.toString());
+                    // Đợi một chút để server cập nhật listenerStreams
+                    Thread.sleep(200);
                 } catch (Exception ignored) {
                 }
 
@@ -111,8 +122,9 @@ public class GameController {
                         String type = msg.optString("type", "");
                         if ("round_data".equals(type)) {
                             int sId = msg.getInt("sessionId");
-                            if (this.sessionId != 0 && this.sessionId != sId) {
-                                return;
+                            // Chỉ xử lý nếu sessionId đã được set và khớp
+                            if (this.sessionId == 0 || this.sessionId != sId) {
+                                continue;
                             }
 
                             String url = msg.optString("imageUrl", null);
@@ -150,7 +162,8 @@ public class GameController {
                             });
                         } else if ("score_update".equals(type)) {
                             int sId = msg.getInt("sessionId");
-                            if (this.sessionId != 0 && this.sessionId != sId) {
+                            // Chỉ xử lý nếu sessionId đã được set và khớp
+                            if (this.sessionId == 0 || this.sessionId != sId) {
                                 continue;
                             }
                             int scoreP1 = msg.getInt("scoreP1");
@@ -166,8 +179,9 @@ public class GameController {
                             });
                         } else if ("game_end".equals(type)) {
                             int sId = msg.getInt("sessionId");
-                            if (this.sessionId != 0 && this.sessionId != sId) {
-                                return;
+                            // Chỉ xử lý nếu sessionId đã được set và khớp
+                            if (this.sessionId == 0 || this.sessionId != sId) {
+                                continue;
                             }
 
                             int scoreP1 = msg.getInt("scoreP1");

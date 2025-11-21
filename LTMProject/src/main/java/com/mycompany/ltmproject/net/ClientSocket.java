@@ -37,9 +37,16 @@ public class ClientSocket {
 
     // Kết nối riêng cho listener - gọi khi vào online players
     public synchronized void connectListener(String host, int port) throws IOException {
-        // Kiểm tra xem đã kết nối chưa
-        if (listenerConnected) {
-            return;
+        // Nếu đã kết nối, đóng listener cũ trước khi tạo mới
+        if (listenerConnected && listenerSocket != null) {
+            try {
+                listenerSocket.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+            listenerIn = null;
+            listenerOut = null;
+            listenerConnected = false;
         }
 
         try {
@@ -50,6 +57,7 @@ public class ClientSocket {
             System.out.println("✅ Listener socket connected");
         } catch (IOException e) {
             System.err.println("❌ Failed to connect listener socket: " + e.getMessage());
+            listenerConnected = false;
             throw e;
         }
     }
@@ -75,7 +83,7 @@ public class ClientSocket {
     public void send(String message) {
         if (out != null) {
             out.println(message);
-        }
+}
     }
 
     public String receive() throws IOException {

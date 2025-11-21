@@ -5,99 +5,73 @@
 
 <AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.mycompany.ltmproject.controller.GameController"
             prefWidth="1056" prefHeight="682"
-            style="-fx-background-color: linear-gradient(to bottom right, #dbeafe, #ffffff);">
+            style="-fx-background-color: linear-gradient(to bottom right, #e0f0ff, #ffffff);">
 
     <!-- KHUNG TRẮNG CHÍNH -->
     <AnchorPane layoutX="44" layoutY="33" prefWidth="968" prefHeight="616"
                 style="-fx-background-color: white;
-                       -fx-background-radius: 20;
-                       -fx-border-color: #3b82f6;
-                       -fx-border-width: 2;
-                       -fx-border-radius: 20;
-                       -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.3), 12, 0.3, 0, 4);">
+                       -fx-background-radius: 15;
+                       -fx-border-color: #3399ff;
+                       -fx-border-radius: 15;
+                       -fx-effect: dropshadow(gaussian, #2f80ed, 10, 0.3, 0, 3);">
 
         <!-- TIÊU ĐỀ Ở GIỮA -->
         <Label text="ĐẾM SỐ LƯỢNG CON VẬT" layoutX="270" layoutY="30"
-               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #2563eb;
-                      -fx-font-family: 'Segoe UI', 'Arial', sans-serif;" />
+               style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2f80ed;" />
 
         <!-- THỜI GIAN BÊN TRÁI TRÊN -->
         <Label text="Thời gian:" layoutX="40" layoutY="80"
-               style="-fx-font-size: 14px; -fx-text-fill: #1f2937;" />
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
         <Label fx:id="lblTimeLeft" text="30s" layoutX="115" layoutY="80"
-               style="-fx-font-size: 16px; -fx-text-fill: #ef4444; -fx-font-weight: bold;" />
+               style="-fx-font-size: 16px; -fx-text-fill: red; -fx-font-weight: bold;" />
 
-        <!-- ĐIỂM NGƯỜI CHƠI -->
+        <!-- ĐIỂM NGƯỜI CHƠI NGAY DƯỚI BỘ ĐẾM -->
         <Label text="Điểm bạn:" layoutX="40" layoutY="120"
-               style="-fx-font-size: 14px; -fx-text-fill: #1f2937;" />
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
         <Label fx:id="scorePlayer1" text="0" layoutX="120" layoutY="120"
-               style="-fx-font-size: 14px; -fx-text-fill: #10b981; -fx-font-weight: bold;" />
+               style="-fx-font-size: 14px; -fx-text-fill: green; -fx-font-weight: bold;" />
 
         <Label text="Điểm đối thủ:" layoutX="40" layoutY="150"
-               style="-fx-font-size: 14px; -fx-text-fill: #1f2937;" />
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
         <Label fx:id="scorePlayer2" text="0" layoutX="145" layoutY="150"
-               style="-fx-font-size: 14px; -fx-text-fill: #f59e0b; -fx-font-weight: bold;" />
+               style="-fx-font-size: 14px; -fx-text-fill: orange; -fx-font-weight: bold;" />
 
         <!-- VÒNG ĐẤU -->
         <Label text="Vòng đấu:" layoutX="700" layoutY="80"
-               style="-fx-font-size: 14px; -fx-text-fill: #1f2937;" />
+               style="-fx-font-size: 14px; -fx-text-fill: #000;" />
         <Label fx:id="lblRound" text="Vòng 0/5" layoutX="780" layoutY="80"
-               style="-fx-font-size: 16px; -fx-text-fill: #2563eb; -fx-font-weight: bold;" />
+               style="-fx-font-size: 16px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
 
         <!-- HÌNH ẢNH CON VẬT -->
         <ImageView fx:id="animalImageView" layoutX="220" layoutY="150"
-                   fitWidth="540" fitHeight="300"
+                   fitWidth="440" fitHeight="260"
                    preserveRatio="true"
-                   style="-fx-border-color: #3b82f6; -fx-border-radius: 12;
-                          -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0.3, 0, 2);" />
+                   style="-fx-border-color: #2f80ed; -fx-border-radius: 10;" />
 
         <!-- NHẬP DỮ LIỆU -->
         <Label text="Số lượng Voi:" layoutX="220" layoutY="450"
-               style="-fx-font-size: 14px; -fx-text-fill: #2563eb; -fx-font-weight: bold;" />
+               style="-fx-font-size: 14px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
         <TextField fx:id="txtElephant" layoutX="360" layoutY="445" prefWidth="140"
-                   style="-fx-background-color: #f9fafb;
-                          -fx-background-radius: 10;
-                          -fx-border-color: #d1d5db;
-                          -fx-border-radius: 10;
-                          -fx-padding: 6 10;
-                          -fx-font-size: 13px;" />
+                   style="-fx-background-radius: 10; -fx-border-radius: 10;" />
 
         <Label text="Số lượng Hải cẩu:" layoutX="220" layoutY="495"
-               style="-fx-font-size: 14px; -fx-text-fill: #2563eb; -fx-font-weight: bold;" />
+               style="-fx-font-size: 14px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
         <TextField fx:id="txtSeal" layoutX="360" layoutY="490" prefWidth="140"
-                   style="-fx-background-color: #f9fafb;
-                          -fx-background-radius: 10;
-                          -fx-border-color: #d1d5db;
-                          -fx-border-radius: 10;
-                          -fx-padding: 6 10;
-                          -fx-font-size: 13px;" />
+                   style="-fx-background-radius: 10; -fx-border-radius: 10;" />
 
         <Label text="Số lượng Cáo:" layoutX="220" layoutY="540"
-               style="-fx-font-size: 14px; -fx-text-fill: #2563eb; -fx-font-weight: bold;" />
+        style="-fx-font-size: 14px; -fx-text-fill: #2f80ed; -fx-font-weight: bold;" />
         <TextField fx:id="txtFox" layoutX="360" layoutY="535" prefWidth="140"
-                   style="-fx-background-color: #f9fafb;
-                          -fx-background-radius: 10;
-                          -fx-border-color: #d1d5db;
-                          -fx-border-radius: 10;
-                          -fx-padding: 6 10;
-                          -fx-font-size: 13px;" />
+                   style="-fx-background-radius: 10; -fx-border-radius: 10;" />
 
         <!-- NÚT GỬI -->
         <Button fx:id="btnSubmit" text="Gửi" layoutX="560" layoutY="500" prefWidth="140" prefHeight="40"
-                style="-fx-background-color: linear-gradient(to right, #60a5fa, #2563eb);
-                       -fx-text-fill: white;
-                       -fx-font-weight: bold;
-                       -fx-font-size: 14px;
-                       -fx-background-radius: 15;
-                       -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.3), 6, 0.2, 0, 2);" />
-
+                style="-fx-background-color: linear-gradient(to right, #56ccf2, #2f80ed);
+                       -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 15;" />
+        
         <!-- NÚT THOÁT -->
         <Button fx:id="btnQuit" text="Thoát" layoutX="760" layoutY="30" prefWidth="100" prefHeight="34"
-                style="-fx-background-color: linear-gradient(to right, #fb7185, #f43f5e);
-                       -fx-text-fill: white;
-                       -fx-font-weight: bold;
-                       -fx-font-size: 13px;
-                       -fx-background-radius: 10;
-                       -fx-effect: dropshadow(gaussian, rgba(244,63,94,0.3), 6, 0.2, 0, 2);" />
+                style="-fx-background-color: linear-gradient(to right, #ff6b6b, #ee5a6f);
+                       -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;" />
     </AnchorPane>
 </AnchorPane>
